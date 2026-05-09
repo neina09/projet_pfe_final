@@ -1,0 +1,23 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------------< com.backend:Projet >-------------------------
+[INFO] Building Projet 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.1:clean (default-clean) @ Projet ---
+[INFO] Deleting C:\Users\youss\Desktop\Projet Fin de etuide\backend\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ Projet ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ Projet ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 81 source files with javac [debug parameters release 21] to target\classes
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  6.691 s
+[INFO] Finished at: 2026-04-10T17:32:43Z
+[INFO] ------------------------------------------------------------------------

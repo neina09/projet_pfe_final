@@ -1,0 +1,20 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "diff",
+  "localEndpoint": "http://localhost:3000",
+  "loginUser": "+22200000003",
+  "loginPassword": "123456789",
+  "executionArgs": {
+    "projectName": "Frontend",
+    "projectPath": "/Users/meldesign/Development/Projet-Fin-Etude copy/Frontend",
+    "testIds": [],
+    "additionalInstruction": "Test worker registration, task creation, and admin approval/rejection. Ensure the 'Show More' button on tasks works and the 'Submit Offer' button appears for workers.",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-AlQGDZfSIP5vDWmsZlPTQ6zm_ySCyYQ2nNC_g2sXpk9n-RlfsLZMPIFXAl4lhWCL2C-KbE9QuB31ZR4uiovVifdLc_LxfViTniDx_8bZ9G1BlNltvpMqvL6V2Mc6bL0Aoog"
+    }
+  },
+  "serverPort": 61574,
+  "proxy": "http://bcd52f05-a390-4816-b35d-ec54883f890c:rxHVaQNzvujquH78V1m9IOD3x0jxoLby@tun.testsprite.com:8080"
+}

@@ -1,0 +1,536 @@
+{
+  "app": {
+    "name": "عمالك",
+    "tagline": "Connectez-vous avec des travailleurs locaux qualifiés",
+    "description": "La marketplace de services à la demande en Mauritanie"
+  },
+  "nav": {
+    "home": "Accueil",
+    "workers": "Travailleurs",
+    "tasks": "Tableau des tâches",
+    "dashboard": "Tableau de bord",
+    "admin": "Administration",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "logout": "Déconnexion",
+    "profile": "Mon profil",
+    "becomeWorker": "Devenir travailleur",
+    "notifications": "Notifications"
+  },
+  "home": {
+    "hero": {
+      "title": "Trouvez le bon travailleur,",
+      "titleHighlight": "au bon moment",
+      "subtitle": "Ommalak connecte les clients mauritaniens avec des plombiers, électriciens, charpentiers et autres professionnels vérifiés près de chez eux.",
+      "ctaWorkers": "Parcourir les travailleurs",
+      "ctaTasks": "Publier une tâche",
+      "stats": {
+        "workers": "Travailleurs vérifiés",
+        "tasks": "Tâches publiées",
+        "clients": "Clients satisfaits"
+      }
+    },
+    "howItWorks": {
+      "title": "Comment ça marche",
+      "step1": { "title": "Publiez votre tâche", "desc": "Décrivez le travail dont vous avez besoin et votre localisation." },
+      "step2": { "title": "Recevez des offres", "desc": "Des travailleurs qualifiés soumettent leurs propositions et tarifs." },
+      "step3": { "title": "Choisissez et payez", "desc": "Sélectionnez le meilleur profil et confirmez la mission." }
+    },
+    "featuredWorkers": {
+      "title": "Travailleurs en vedette",
+      "subtitle": "Découvrez nos meilleurs prestataires vérifiés",
+      "viewAll": "Voir tous les travailleurs"
+    },
+    "categories": {
+      "title": "Catégories populaires",
+      "plumber": "Plombier",
+      "electrician": "Électricien",
+      "carpenter": "Charpentier",
+      "painter": "Peintre",
+      "mason": "Maçon",
+      "cleaner": "Nettoyage",
+      "mechanic": "Mécanicien",
+      "gardener": "Jardinier",
+      "tailor": "Tailleur",
+      "driver": "Chauffeur",
+      "chef": "Chef / Cuisinier",
+      "security": "Sécurité"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Bon retour",
+      "subtitle": "Connectez-vous à votre compte",
+      "phone": "Numéro de téléphone",
+      "password": "Mot de passe",
+      "forgotPassword": "Mot de passe oublié ?",
+      "submit": "Se connecter",
+      "noAccount": "Pas encore de compte ?",
+      "register": "S'inscrire"
+    },
+    "register": {
+      "title": "Créer un compte",
+      "subtitle": "Rejoignez la communauté Ommalak",
+      "name": "Nom complet",
+      "phone": "Numéro de téléphone",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "submit": "S'inscrire",
+      "hasAccount": "Déjà un compte ?",
+      "login": "Se connecter"
+    },
+    "otp": {
+      "title": "Vérification OTP",
+      "subtitle": "Entrez le code reçu par SMS",
+      "code": "Code de vérification",
+      "submit": "Vérifier",
+      "resend": "Renvoyer le code",
+      "placeholder": "------",
+      "lengthError": "Entrez les 6 chiffres"
+    },
+    "forgotPassword": {
+      "title": "Mot de passe oublié",
+      "subtitle": "Entrez votre numéro pour recevoir un code",
+      "phone": "Numéro de téléphone",
+      "submit": "Envoyer le code",
+      "backToLogin": "Retour à la connexion"
+    },
+    "resetPassword": {
+      "title": "Réinitialiser le mot de passe",
+      "subtitle": "Créez un nouveau mot de passe sécurisé",
+      "code": "Code OTP",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "submit": "Réinitialiser"
+    }
+  },
+  "workers": {
+    "title": "Travailleurs vérifiés",
+    "subtitle": "Trouvez le professionnel idéal pour votre besoin",
+    "search": "Rechercher un travailleur...",
+    "filter": {
+      "all": "Tous",
+      "available": "Disponibles",
+      "profession": "Profession"
+    },
+    "card": {
+      "verified": "Vérifié",
+      "available": "Disponible",
+      "busy": "Occupé",
+      "rating": "Note",
+      "viewProfile": "Voir le profil",
+      "book": "Réserver"
+    },
+    "profile": {
+      "skills": "Compétences",
+      "location": "Localisation",
+      "salary": "Tarif journalier",
+      "joinedDate": "Membre depuis",
+      "reviews": "Avis clients",
+      "book": "Réserver maintenant",
+      "rate": "Laisser un avis"
+    },
+    "empty": {
+      "title": "Aucun travailleur trouvé",
+      "description": "Essayez de modifier vos termes de recherche ou les filtres pour obtenir de meilleurs résultats."
+    },
+    "loading": "Chargement des travailleurs...",
+    "profile": {
+      "viewProfile": "Voir le profil"
+    }
+  },
+  "worker": {
+    "portfolio": "Portfolio",
+    "noPortfolio": "Aucune photo de portfolio pour le moment",
+    "add": "Ajouter un travailleur",
+    "edit": "Modifier le travailleur",
+    "user": "Compte associé",
+    "name": "Nom du travailleur",
+    "phone": "Téléphone",
+    "job": "Métier",
+    "address": "Adresse",
+    "dailySalary": "Salaire journalier",
+    "nationalId": "Numéro d'identité",
+    "identityInfo": "Le document d'identité doit être un fichier unique. Vous pouvez également mettre à jour la photo ici.",
+    "photo": "Photo du travailleur",
+    "noUsers": "Aucun compte disponible pour devenir travailleur.",
+    "identityFront": "Identité (Recto)",
+    "identityBack": "Identité (Verso)",
+    "facePhoto": "Photo claire du visage",
+    "frontSide": "Recto de la carte",
+    "backSide": "Verso de la carte",
+    "selectFile": "Choisir un fichier ou prendre une photo"
+  },
+  "workerStatusLabel": {
+    "ALL": "Tout",
+    "VERIFIED": "Vérifié",
+    "PENDING": "En attente",
+    "REJECTED": "Rejeté"
+  },
+  "tasks": {
+    "title": "Tableau des tâches",
+    "subtitle": "Parcourez les missions disponibles",
+    "create": "Publier une tâche",
+    "myTasks": "Mes tâches",
+    "search": "Rechercher une tâche...",
+    "status": {
+      "ALL": "Tous",
+      "PENDING_REVIEW": "En attente de validation",
+      "PENDING": "En attente",
+      "OPEN": "Ouvert",
+      "IN_PROGRESS": "En cours",
+      "COMPLETED": "Terminé",
+      "CANCELLED": "Annulé",
+      "SELECTED": "Sélectionné",
+      "WORKER_REFUSED": "Exécution refusée",
+      "ACCEPTED": "Accepté",
+      "REJECTED": "Rejeté",
+      "CLOSED": "Fermé",
+      "PENDING_REVIEW": "En attente de révision"
+    },
+    "form": {
+      "title": "Titre de la tâche",
+      "description": "Description",
+      "profession": "Profession requise",
+      "location": "Localisation",
+      "budget": "Budget estimé",
+      "submit": "Publier la tâche",
+      "update": "Mettre à jour"
+    },
+    "offers": {
+      "title": "Offres reçues",
+      "submit": "Soumettre une offre",
+      "price": "Prix proposé",
+      "message": "Message",
+      "accept": "Accepter",
+      "reject": "Rejeter",
+      "acceptExecution": "Accepter l'exécution",
+      "rejectExecution": "Refuser l'exécution",
+      "pending": "En attente",
+      "accepted": "Acceptée",
+      "noOffers": "Aucune offre pour l'instant",
+      "success": "Votre offre a été soumise avec succès !",
+      "offerSubmitted": "Vous avez déjà soumis une offre pour cette mission.",
+      "guestHint": "Vous pouvez uniquement voir les détails de la tâche. Pour soumettre une offre ou interagir, vous devez d'abord vous connecter."
+    },
+    "manage": "Gérer la tâche",
+    "edit": "Modifier la tâche",
+    "cancel": "Annuler la tâche",
+    "delete": "Supprimer la tâche",
+    "markDone": "Terminer la tâche",
+    "rate": "Évaluer",
+    "workerComments": "Commentaires des ouvriers",
+    "workerCommentsHint": "L'ouvrier peut commenter la tâche ouverte avant le début de l'exécution.",
+    "addComment": "Ajouter un commentaire",
+    "publishComment": "Publier le commentaire",
+    "noComments": "Aucun commentaire pour l'instant.",
+    "offerStatus": "Statut de votre offre",
+    "selectedOffer": "Offre sélectionnée",
+    "empty": "Aucune tâche disponible",
+    "loading": "Chargement des tâches..."
+  },
+  "bookings": {
+    "title": "Mes réservations",
+    "create": "Nouvelle réservation",
+    "workerBookings": "Mes missions",
+    "form": {
+      "date": "Date souhaitée",
+      "description": "Description du travail",
+      "submit": "Confirmer la réservation"
+    },
+    "status": {
+      "ALL": "Tous",
+      "PENDING": "En attente",
+      "ACCEPTED": "Acceptée",
+      "COMPLETED": "Terminée",
+      "CANCELLED": "Annulée",
+      "REJECTED": "Refusée"
+    },
+    "empty": "Aucune réservation",
+    "loading": "Chargement..."
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue",
+    "myTasks": "Mes tâches",
+    "myBookings": "Mes réservations",
+    "profile": "Mon profil",
+    "stats": {
+      "tasks": "Tâches publiées",
+      "bookings": "Réservations",
+      "offers": "Offres reçues"
+    }
+  },
+  "workerDashboard": {
+    "title": "Espace travailleur",
+    "availability": "Disponibilité",
+    "available": "Disponible",
+    "busy": "Occupé",
+    "myOffers": "Mes offres",
+    "myRequests": "Mes demandes",
+    "myBookings": "Mes missions",
+    "profile": "Mon profil professionnel",
+    "stats": {
+      "rating": "Note moyenne",
+      "jobs": "Missions effectuées",
+      "pending": "En attente"
+    },
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "noReviews": "Aucun avis reçu pour l'instant"
+  },
+  "workers": {
+    "title": "Professionnels",
+    "subtitle": "Découvrez les meilleurs experts certifiés pour vous aider",
+    "search": "Rechercher un professionnel...",
+    "filter": {
+      "available": "Disponibles uniquement"
+    },
+    "empty": {
+      "title": "Aucun professionnel",
+      "description": "Aucun travailleur ne correspond à votre recherche pour le moment."
+    },
+    "card": {
+      "available": "Disponible",
+      "busy": "Occupé",
+      "viewProfile": "Voir profil",
+      "book": "Réserver"
+    },
+    "profile": {
+      "rate": "Évaluer",
+      "book": "Réserver maintenant",
+      "joinedDate": "Date d'adhésion",
+      "skills": "Compétences",
+      "reviews": "Avis clients",
+      "viewProfile": "Voir le profil"
+    }
+  },
+  "worker": {
+    "add": "Ajouter un ouvrier",
+    "edit": "Modifier l'ouvrier",
+    "name": "Nom de l'ouvrier",
+    "phone": "Téléphone",
+    "job": "Métier",
+    "address": "Adresse",
+    "dailySalary": "Salaire journalier",
+    "nationalId": "Numéro d'identité",
+    "photo": "Photo de l'ouvrier",
+    "facePhoto": "Photo du visage",
+    "identityFront": "Identité (Recto)",
+    "frontSide": "Face avant",
+    "identityBack": "Identité (Verso)",
+    "backSide": "Face arrière",
+    "user": "Utilisateur associé",
+    "profile": {
+      "viewProfile": "Voir le profil professionnel"
+    }
+  },
+  "becomeWorker": {
+    "title": "Devenir ouvrier",
+    "subtitle": "Rejoignez notre réseau de professionnels vérifiés",
+    "pending": "Votre demande est en cours de traitement",
+    "success": "Demande soumise avec succès !",
+    "alreadyWorker": "Vous êtes déjà inscrit en tant qu'ouvrier",
+    "alreadyWorkerHint": "Vous pouvez gérer votre profil professionnel depuis le tableau de bord de l'ouvrier, ou supprimer votre profil d'ouvrier pour redevenir un utilisateur normal.",
+    "verificationHint": "La vérification de l'ouvrier se fait via trois photos : une photo claire du visage, une photo du recto de la carte d'identité, et une photo du verso.",
+    "form": {
+      "profession": "Votre métier",
+      "skills": "Compétences (séparées par des virgules)",
+      "bio": "Présentation",
+      "location": "Localisation",
+      "salary": "Tarif journalier (MRU)",
+      "idDocument": "Document d'identité",
+      "submit": "Soumettre la demande",
+      "preview": "Aperçu de la photo de l'ouvrier"
+    }
+  },
+  "admin": {
+    "title": "Administration",
+    "stats": {
+      "users": "Utilisateurs",
+      "workers": "Travailleurs",
+      "tasks": "Tâches",
+      "bookings": "Réservations"
+    },
+    "pendingWorkers": "Demandes en attente",
+    "openDetailsBeforeAction": "Ouvrez les détails d'abord avant d'approuver ou rejeter le travailleur.",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "users": "Gestion des utilisateurs",
+    "tasks": "Modération des tâches",
+    "delete": "Supprimer",
+    "noData": "Aucune donnée disponible",
+    "completedTasks": "Tâches complétées",
+    "earnings": {
+      "title": "Revenus de la plateforme",
+      "totalRevenue": "Revenu total",
+      "workerShare": "Part travailleurs",
+      "platformFee": "Commission plateforme",
+      "perWorker": "Détail par travailleur",
+      "history": "Historique des revenus",
+      "completedBookings": "Réservations complétées",
+      "filters": {
+        "7d": "7j",
+        "30d": "30j",
+        "90d": "3 mois",
+        "1y": "1 an"
+      }
+    },
+    "penalty": {
+      "add": "Ajouter une pénalité",
+      "reason": "Motif",
+      "amount": "Montant (MRU)",
+      "confirm": "Appliquer la pénalité",
+      "target": "Pénalité pour",
+      "list": "Pénalités",
+      "noPenalties": "Aucune pénalité enregistrée"
+    },
+    "reviews": {
+      "title": "Avis clients",
+      "clientPhone": "Téléphone",
+      "noReviews": "Aucun avis"
+    },
+    "manageWorkers": "Gérer les ouvriers",
+    "adminProfile": "Profil Administrateur",
+    "addAdmin": "Ajouter un administrateur",
+    "noCandidates": "Aucun utilisateur disponible pour promotion en administrateur.",
+    "searchPlaceholder": "Chercher par nom, téléphone ou métier...",
+    "adminBecomeWorkerError": "Le compte administrateur ne peut pas être converti en ouvrier",
+    "adminBecomeWorkerErrorHint": "Si vous voulez un nouvel ouvrier, créez-le depuis le panneau d'administration pour un compte utilisateur normal.",
+    "goToAdmin": "Aller au panneau d'administration",
+    "workerTable": {
+      "worker": "Travailleur",
+      "job": "Métier",
+      "phone": "Téléphone",
+      "address": "Localisation",
+      "salary": "Salaire",
+      "status": "Statut",
+      "actions": "Actions",
+      "viewIdentity": "Voir l'identité",
+      "pendingHint": "Ouvrez les détails avant d'approuver ou rejeter."
+    },
+    "task": {
+      "approve": "Approuver la tâche",
+      "reject": "Rejeter la tâche"
+    },
+    "charts": {
+      "title": "Statistiques de la plateforme",
+      "daily": "Quotidien",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel",
+      "totalTasks": "Total des tâches",
+      "totalBookings": "Total des réservations",
+      "newUsers": "Nouveaux utilisateurs",
+      "growth": "Taux de croissance",
+      "tasksAndBookings": "Tâches et réservations",
+      "usersTrend": "Tendance utilisateurs",
+      "distribution": "Distribution générale"
+    },
+    "chart": {
+      "title": "Statistiques de la plateforme",
+      "daily": "Quotidien",
+      "weekly": "Hebdomadaire",
+      "monthly": "Mensuel"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAll": "Tout marquer comme lu",
+    "empty": "Aucune notification",
+    "unread": "non lues",
+    "patterns": {
+      "selected": "Vous avez été sélectionné pour la tâche : {{taskName}}",
+      "newOffer": "Une nouvelle offre a été soumise pour votre tâche : {{taskName}}",
+      "offerAccepted": "Votre offre pour la tâche {{taskName}} a été acceptée",
+      "offerRejected": "Votre offre pour la tâche {{taskName}} a été rejetée",
+      "taskCompleted": "La tâche {{taskName}} est terminée",
+      "bookingConfirmed": "Votre réservation est confirmée pour le : {{date}}",
+      "newBooking": "Vous avez une nouvelle demande de réservation pour le : {{date}}",
+      "workerVerified": "Votre compte ouvrier a été vérifié avec succès",
+      "taskApproved": "Votre tâche a été approuvée et est maintenant visible sur la plateforme : {{taskName}}",
+      "workerAccepted": "L'ouvrier {{workerName}} a accepté de travailler sur : {{taskName}}",
+      "workerRefused": "L'ouvrier {{workerName}} a refusé la tâche : {{taskName}}",
+      "identitySubmitted": "L'ouvrier {{workerName}} a soumis son document d'identité pour vérification",
+      "workerPendingApproval": "Nouvelle inscription d'ouvrier en attente d'approbation : {{workerName}}",
+      "workerApproved": "L'ouvrier {{workerName}} a été approuvé",
+      "workerRejected": "L'ouvrier {{workerName}} a été rejeté",
+      "taskRejected": "Votre tâche a été rejetée : {{taskName}}",
+      "taskCancelled": "La tâche a été annulée : {{taskName}}",
+      "bookingCancelled": "La réservation a été annulée : {{date}}"
+    }
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "retry": "Réessayer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "back": "Retour",
+    "confirm": "Confirmer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "noData": "Aucune donnée",
+    "success": "Opération réussie",
+    "viewMore": "Voir plus",
+    "view": "Voir",
+    "close": "Fermer",
+    "or": "ou",
+    "submitting": "Envoi en cours...",
+    "perDay": "/jour",
+    "stars": "étoiles",
+    "loggingIn": "Connexion en cours...",
+    "loggingOut": "Déconnexion en cours...",
+    "all": "Tous",
+    "days": {
+      "sun": "Dim",
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Jeu",
+      "fri": "Ven",
+      "sat": "Sam"
+    },
+    "week": "Semaine",
+    "week_short": "Sem {{n}}",
+    "select": "Choisir",
+    "info": "Info",
+    "comments": "Commentaires",
+    "profession": "Profession",
+    "status": "Statut",
+    "worker": "Ouvrier",
+    "client": "Client",
+    "optional": "Facultatif",
+    "you": "Vous"
+  },
+  "profile": {
+    "title": "Mon Profil",
+    "name": "Nom",
+    "phone": "Téléphone",
+    "update": "Mettre à jour",
+    "success": "Profil mis à jour",
+    "changePassword": "Changer le mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe"
+  },
+  "errors": {
+    "required": "Ce champ est obligatoire",
+    "invalidPhone": "Numéro de téléphone invalide",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "minPassword": "Le mot de passe doit contenir au moins 6 caractères",
+    "serverError": "Erreur serveur. Veuillez réessayer.",
+    "unauthorized": "Session expirée. Veuillez vous reconnecter.",
+    "notFound": "Ressource non trouvée",
+    "workerPhotoRequired": "Veuillez télécharger la photo de l'ouvrier avant d'envoyer la demande.",
+    "identityRequired": "Veuillez télécharger la carte d'identité (recto).",
+    "passwordRequired": "Veuillez saisir l'ancien et le nouveau mot de passe",
+    "workerDataLoadError": "Impossible de charger les données de l'ouvrier.",
+    "identityOpenError": "Impossible d'ouvrir le document d'identité.",
+    "workerProfileDeleteError": "Impossible de supprimer le profil de l'ouvrier.",
+    "workerProfileUpdateError": "Impossible de mettre à jour le profil de l'ouvrier.",
+    "workerBusy": "Vous devez être DISPONIBLE pour soumettre une offre ou commenter. Veuillez mettre à jour votre statut dans les paramètres du profil.",
+    "passwordComplexity": "Le mot de passe doit contenir au moins une lettre et un chiffre"
+  }
+}

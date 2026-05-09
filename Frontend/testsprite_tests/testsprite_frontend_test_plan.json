@@ -1,0 +1,156 @@
+[
+  {
+    "id": "TC001",
+    "title": "App startup completes and landing UI becomes usable after splash animation",
+    "description": "Verifies the splash animation plays on cold start and then the main landing UI becomes visible without blocking navigation.",
+    "category": "SplashScreen Animation",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application landing page."
+      },
+      {
+        "type": "action",
+        "description": "Wait for the splash screen animation to appear."
+      },
+      {
+        "type": "action",
+        "description": "Wait for the splash screen animation to complete."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the main page chrome is visible with the Navbar brand present."
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Worker profile shows key contact and rate details",
+    "description": "Verifies a client can open a worker profile and see city/location, phone number, and daily rate in MRU.",
+    "category": "Worker Profile Contact Information",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate directly to a worker profile route using the browser address bar."
+      },
+      {
+        "type": "action",
+        "description": "Wait for the page to finish loading."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the worker city or location is displayed."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the worker phone number and daily rate in MRU are displayed."
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Splash screen does not trap navigation when navigating away during startup",
+    "description": "Verifies a user can navigate to another route while the splash screen is showing and still reach the destination once startup completes.",
+    "category": "SplashScreen Animation",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the application landing page."
+      },
+      {
+        "type": "action",
+        "description": "Wait for the splash screen animation to appear."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to a worker profile route using the browser address bar."
+      },
+      {
+        "type": "action",
+        "description": "Wait for the splash screen animation to complete."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the worker profile page is displayed."
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC004",
+    "title": "Deep-link cold start renders worker profile after splash without layout disruption",
+    "description": "Verifies that direct navigation to a worker profile from a cold start shows the splash screen and then renders the worker profile cleanly.",
+    "category": "SplashScreen Animation",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate directly to a worker profile route using the browser address bar."
+      },
+      {
+        "type": "action",
+        "description": "Wait for the splash screen animation to appear."
+      },
+      {
+        "type": "action",
+        "description": "Wait for the splash screen animation to complete."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the worker profile page is displayed with the site Navbar visible."
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC005",
+    "title": "Invalid worker id fails gracefully without breaking page chrome",
+    "description": "Verifies navigating to a worker profile with an invalid id shows a safe fallback state without crashing and keeps the Navbar visible.",
+    "category": "Worker Profile Contact Information",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate directly to a worker profile route using an invalid id in the browser address bar."
+      },
+      {
+        "type": "action",
+        "description": "Wait for the page to finish loading."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a safe fallback state is shown for the worker profile instead of a broken page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the Navbar remains visible and usable."
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC006",
+    "title": "Worker profile renders gracefully when some contact fields are missing",
+    "description": "Verifies the worker profile page remains usable when one or more of city, phone, or daily rate are absent and shows a safe fallback UI.",
+    "category": "Worker Profile Contact Information",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate directly to a worker profile route expected to have incomplete contact information."
+      },
+      {
+        "type": "action",
+        "description": "Wait for the page to finish loading."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the profile page renders without crashes and shows a safe fallback for missing details."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the available contact/rate details still display where present."
+      }
+    ],
+    "priority": "Low"
+  }
+]

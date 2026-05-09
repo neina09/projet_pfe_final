@@ -1,0 +1,540 @@
+{
+  "app": {
+    "name": "عمالك",
+    "tagline": "تواصل مع العمال المحليين المؤهلين",
+    "description": "سوق الخدمات الفورية في موريتانيا"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "workers": "العمال",
+    "tasks": "لوحة المهام",
+    "dashboard": "لوحة التحكم",
+    "admin": "الإدارة",
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "logout": "تسجيل الخروج",
+    "profile": "ملفي الشخصي",
+    "becomeWorker": "كن عاملاً",
+    "notifications": "الإشعارات"
+  },
+  "home": {
+    "hero": {
+      "title": "ابحث عن العامل المناسب،",
+      "titleHighlight": "في الوقت المناسب",
+      "subtitle": "عمالك يربط العملاء الموريتانيين بالسباكين والكهربائيين والنجارين والمهنيين الموثقين بالقرب منهم.",
+      "ctaWorkers": "تصفح العمال",
+      "ctaTasks": "نشر مهمة",
+      "stats": {
+        "workers": "عامل موثق",
+        "tasks": "مهمة منشورة",
+        "clients": "عميل راضٍ"
+      }
+    },
+    "howItWorks": {
+      "title": "كيف يعمل",
+      "step1": { "title": "انشر مهمتك", "desc": "صف العمل الذي تحتاجه وموقعك." },
+      "step2": { "title": "استقبل العروض", "desc": "يقدم العمال المؤهلون عروضهم وأسعارهم." },
+      "step3": { "title": "اختر وابدأ", "desc": "اختر أفضل ملف شخصي وأكد المهمة." }
+    },
+    "featuredWorkers": {
+      "title": "عمال مميزون",
+      "subtitle": "اكتشف أفضل مزودي الخدمات الموثقين لدينا",
+      "viewAll": "عرض جميع العمال"
+    },
+    "categories": {
+      "title": "الفئات الشائعة",
+      "plumber": "سباك",
+      "electrician": "كهربائي",
+      "carpenter": "نجار",
+      "painter": "دهان",
+      "mason": "بناء",
+      "cleaner": "تنظيف",
+      "chef": "طباخ",
+      "security": "حارس أمن",
+      "mechanic": "ميكانيكي",
+      "gardener": "بستاني",
+      "tailor": "خياط",
+      "driver": "سائق"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "مرحباً بعودتك",
+      "subtitle": "سجل الدخول إلى حسابك",
+      "phone": "رقم الهاتف",
+      "password": "كلمة المرور",
+      "forgotPassword": "نسيت كلمة المرور؟",
+      "submit": "تسجيل الدخول",
+      "noAccount": "ليس لديك حساب بعد؟",
+      "register": "إنشاء حساب"
+    },
+    "register": {
+      "title": "إنشاء حساب",
+      "subtitle": "انضم إلى مجتمع عمالك",
+      "name": "الاسم الكامل",
+      "phone": "رقم الهاتف",
+      "password": "كلمة المرور",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "submit": "إنشاء الحساب",
+      "hasAccount": "لديك حساب بالفعل؟",
+      "login": "تسجيل الدخول"
+    },
+    "otp": {
+      "title": "التحقق من OTP",
+      "subtitle": "أدخل الرمز المستلم عبر الرسائل القصيرة",
+      "code": "رمز التحقق",
+      "submit": "تحقق",
+      "resend": "إعادة إرسال الرمز",
+      "placeholder": "------",
+      "lengthError": "أدخل الـ 6 أرقام"
+    },
+    "forgotPassword": {
+      "title": "نسيت كلمة المرور",
+      "subtitle": "أدخل رقمك لاستلام رمز",
+      "phone": "رقم الهاتف",
+      "submit": "إرسال الرمز",
+      "backToLogin": "العودة لتسجيل الدخول"
+    },
+    "resetPassword": {
+      "title": "إعادة تعيين كلمة المرور",
+      "subtitle": "أنشئ كلمة مرور جديدة آمنة",
+      "code": "رمز OTP",
+      "newPassword": "كلمة المرور الجديدة",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "submit": "إعادة التعيين"
+    }
+  },
+  "workers": {
+    "title": "العمال الموثقون",
+    "subtitle": "ابحث عن المهني المثالي لاحتياجك",
+    "search": "ابحث عن عامل...",
+    "filter": {
+      "all": "الكل",
+      "available": "المتاحون",
+      "profession": "المهنة"
+    },
+    "card": {
+      "verified": "موثق",
+      "available": "متاح",
+      "busy": "مشغول",
+      "rating": "التقييم",
+      "viewProfile": "عرض الملف",
+      "book": "حجز"
+    },
+    "profile": {
+      "skills": "المهارات",
+      "location": "الموقع",
+      "salary": "الأجر اليومي",
+      "joinedDate": "عضو منذ",
+      "reviews": "آراء العملاء",
+      "book": "احجز الآن",
+      "rate": "اكتب تقييمًا"
+    },
+    "empty": {
+      "title": "لم يُعثر على أي عامل",
+      "description": "حاول تغيير كلمات البحث أو تصفية النتائج للحصول على نتائج أفضل."
+    },
+    "loading": "جارٍ تحميل العمال...",
+    "profile": {
+      "viewProfile": "عرض الملف"
+    }
+  },
+  "worker": {
+    "portfolio": "معرض الأعمال",
+    "noPortfolio": "لا توجد صور في معرض الأعمال حتى الآن",
+    "add": "إضافة عامل جديد",
+    "edit": "تعديل بيانات العامل",
+    "user": "الحساب المرتبط",
+    "name": "اسم العامل",
+    "phone": "رقم الهاتف",
+    "job": "المهنة",
+    "address": "الموقع",
+    "dailySalary": "الأجر اليومي",
+    "nationalId": "رقم الهوية الوطنية",
+    "selectProfession": "اختر المهنة",
+    "identityInfo": "بطاقة الهوية في النظام الحالي تُرفع كملف واحد يحتوي على الجهتين معًا. يمكنك أيضًا تحديث صورة العامل من هنا.",
+    "photo": "صورة العامل",
+    "noUsers": "لا يوجد حاليًا حسابات متاحة لإضافة عامل جديد.",
+    "identityFront": "الهوية (الأمام)",
+    "identityBack": "الهوية (الخلف)",
+    "facePhoto": "صورة واضحة للوجه",
+    "frontSide": "وجه البطاقة",
+    "backSide": "ظهر البطاقة",
+    "selectFile": "اختر ملفًا أو التقط صورة"
+  },
+  "workerStatusLabel": {
+    "ALL": "الكل",
+    "VERIFIED": "موثق",
+    "PENDING": "قيد المراجعة",
+    "REJECTED": "مرفوض"
+  },
+  "tasks": {
+    "title": "لوحة المهام",
+    "subtitle": "تصفح المهام المتاحة",
+    "create": "نشر مهمة",
+    "myTasks": "مهامي",
+    "search": "ابحث عن مهمة...",
+    "status": {
+      "ALL": "الكل",
+      "PENDING_REVIEW": "قيد المراجعة",
+      "PENDING": "قيد الانتظار",
+      "OPEN": "مفتوح",
+      "IN_PROGRESS": "قيد التنفيذ",
+      "COMPLETED": "مكتمل",
+      "CANCELLED": "ملغى",
+      "SELECTED": "تم اختيارك",
+      "WORKER_REFUSED": "رفضت التنفيذ",
+      "ACCEPTED": "مقبول",
+      "REJECTED": "مرفوض",
+      "CLOSED": "مغلق"
+    },
+    "form": {
+      "title": "عنوان المهمة",
+      "description": "الوصف",
+      "profession": "المهنة المطلوبة",
+      "location": "الموقع",
+      "budget": "الميزانية المقدرة",
+      "submit": "نشر المهمة",
+      "update": "تحديث"
+    },
+    "offers": {
+      "title": "العروض المستلمة",
+      "submit": "تقديم عرض",
+      "price": "السعر المقترح",
+      "message": "رسالة",
+      "accept": "قبول",
+      "reject": "رفض",
+      "acceptExecution": "قبول التنفيذ",
+      "rejectExecution": "رفض التنفيذ",
+      "pending": "قيد الانتظار",
+      "accepted": "مقبول",
+      "noOffers": "لا توجد عروض حتى الآن",
+      "success": "تم تقديم عرضك بنجاح!",
+      "offerSubmitted": "لقد قمت بتقديم عرض بالفعل على هذه المهمة.",
+      "guestHint": "يمكنك مشاهدة تفاصيل المهمة فقط. لتقديم عرض أو التفاعل معها يجب تسجيل الدخول أولًا."
+    },
+    "manage": "إدارة المهمة",
+    "edit": "تعديل المهمة",
+    "cancel": "إلغاء المهمة",
+    "delete": "حذف المهمة",
+    "markDone": "إنهاء المهمة",
+    "rate": "إضافة تقييم",
+    "workerComments": "تعليقات العمال",
+    "workerCommentsHint": "العامل يستطيع التعليق على المهمة المفتوحة قبل بدء التنفيذ.",
+    "addComment": "أضف تعليقًا",
+    "publishComment": "نشر التعليق",
+    "noComments": "لا توجد تعليقات حتى الآن.",
+    "offerStatus": "حالة عرضك",
+    "selectedOffer": "العرض المختار",
+    "empty": "لا توجد مهام متاحة",
+    "loading": "جارٍ تحميل المهام..."
+  },
+  "bookings": {
+    "title": "حجوزاتي",
+    "create": "حجز جديد",
+    "workerBookings": "مهامي",
+    "form": {
+      "date": "التاريخ المطلوب",
+      "description": "وصف العمل",
+      "submit": "تأكيد الحجز"
+    },
+    "status": {
+      "ALL": "الكل",
+      "PENDING": "قيد الانتظار",
+      "ACCEPTED": "مقبول",
+      "COMPLETED": "مكتمل",
+      "CANCELLED": "ملغى",
+      "REJECTED": "مرفوض"
+    },
+    "empty": "لا توجد حجوزات",
+    "loading": "جارٍ التحميل..."
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "welcome": "مرحباً",
+    "myTasks": "مهامي",
+    "myBookings": "حجوزاتي",
+    "profile": "ملفي الشخصي",
+    "stats": {
+      "tasks": "مهام منشورة",
+      "bookings": "الحجوزات",
+      "offers": "عروض مستلمة"
+    }
+  },
+  "workerDashboard": {
+    "title": "مساحة العامل",
+    "availability": "التوفر",
+    "available": "متاح",
+    "busy": "مشغول",
+    "myOffers": "عروضي",
+    "myRequests": "طلباتي",
+    "myBookings": "مهامي",
+    "profile": "ملفي المهني",
+    "stats": {
+      "rating": "متوسط التقييم",
+      "jobs": "مهام منجزة",
+      "pending": "قيد الانتظار"
+    },
+    "accept": "قبول",
+    "reject": "رفض",
+    "noReviews": "لا توجد تقييمات واردة حتى الآن"
+  },
+  "workers": {
+    "title": "المهنيون",
+    "subtitle": "اكتشف أفضل الخبراء الموثوقين لمساعدتك",
+    "search": "البحث عن مهني...",
+    "filter": {
+      "available": "المتاحون فقط"
+    },
+    "empty": {
+      "title": "لا يوجد مهنيون",
+      "description": "لم يتم العثور على عمال يطابقون بحثك حالياً."
+    },
+    "card": {
+      "available": "متاح",
+      "busy": "مشغول",
+      "viewProfile": "عرض الملف",
+      "book": "حجز"
+    },
+    "profile": {
+      "rate": "تقييم",
+      "book": "حجز الآن",
+      "joinedDate": "تاريخ الانضمام",
+      "skills": "المهارات",
+      "reviews": "آراء العملاء",
+      "viewProfile": "عرض الملف الشخصي"
+    }
+  },
+  "worker": {
+    "add": "إضافة عامل",
+    "edit": "تعديل عامل",
+    "name": "اسم العامل",
+    "phone": "رقم الهاتف",
+    "job": "المهنة",
+    "address": "العنوان",
+    "dailySalary": "الأجر اليومي",
+    "nationalId": "رقم التعريف الوطني",
+    "photo": "صورة العامل",
+    "facePhoto": "صورة الوجه",
+    "identityFront": "الهوية (الأمام)",
+    "frontSide": "الوجه الأمامي",
+    "identityBack": "الهوية (الخلف)",
+    "backSide": "الوجه الخلفي",
+    "user": "المستخدم المرتبط",
+    "profile": {
+      "viewProfile": "عرض الملف المهني"
+    }
+  },
+  "becomeWorker": {
+    "title": "كن عاملاً",
+    "subtitle": "انضم إلى شبكة المهنيين الموثقين",
+    "pending": "طلبك قيد المعالجة",
+    "success": "تم تقديم الطلب بنجاح!",
+    "alreadyWorker": "أنت مسجل بالفعل كعامل",
+    "alreadyWorkerHint": "يمكنك إدارة ملفك المهني من لوحة العامل، أو حذف ملف العامل إذا أردت الرجوع إلى حساب مستخدم عادي.",
+    "verificationHint": "يتم التحقق من العامل عبر ثلاث صور: صورة شخصية واضحة للوجه، وصورة للوجه الأمامي لبطاقة الهوية، وصورة للوجه الخلفي.",
+    "form": {
+      "profession": "مهنتك",
+      "skills": "المهارات (مفصولة بفواصل)",
+      "bio": "نبذة عنك",
+      "location": "الموقع",
+      "salary": "الأجر اليومي (MRU)",
+      "idDocument": "وثيقة الهوية",
+      "idDocumentPlaceholder": "رقم بطاقة التعريف الوطنية",
+      "submit": "تقديم الطلب",
+      "preview": "معاينة صورة العامل",
+      "skillsPlaceholder": "تمديدات، صيانة، تركيب...",
+      "bioPlaceholder": "اكتب خبرتك والخدمات التي تقدمها...",
+      "locationPlaceholder": "لكصر، عرفات، تفرغ زينة..."
+    }
+  },
+  "admin": {
+    "title": "الإدارة",
+    "stats": {
+      "users": "المستخدمون",
+      "workers": "العمال",
+      "tasks": "المهام",
+      "bookings": "الحجوزات"
+    },
+    "pendingWorkers": "الطلبات المعلقة",
+    "openDetailsBeforeAction": "افتح التفاصيل أولاً قبل قبول أو رفض العامل.",
+    "approve": "موافقة",
+    "reject": "رفض",
+    "users": "إدارة المستخدمين",
+    "tasks": "تحرير المهام",
+    "delete": "حذف",
+    "noData": "لا توجد بيانات",
+    "manageWorkers": "إدارة العمال",
+    "adminProfile": "ملف المدير",
+    "addAdmin": "إضافة مدير",
+    "noCandidates": "لا يوجد حاليًا مستخدم عادي متاح للترقية إلى مدير.",
+    "searchPlaceholder": "ابحث بالاسم، الهاتف، أو المهنة...",
+    "adminBecomeWorkerError": "حساب المدير لا يمكن تحويله إلى عامل",
+    "adminBecomeWorkerErrorHint": "إذا أردت عاملاً جديدًا، أنشئه من لوحة الإدارة لحساب مستخدم عادي.",
+    "goToAdmin": "الذهاب إلى لوحة الإدارة",
+    "workerTable": {
+      "worker": "العامل",
+      "job": "المهنة",
+      "phone": "الهاتف",
+      "address": "الموقع",
+      "salary": "الأجر",
+      "status": "الحالة",
+      "actions": "الإجراءات",
+      "viewIdentity": "عرض الهوية",
+      "pendingHint": "افتح التفاصيل أولاً قبل قبول أو رفض العامل."
+    },
+    "completedTasks": "المهام المكتملة",
+    "earnings": {
+      "title": "إيرادات المنصة",
+      "totalRevenue": "الإيراد الإجمالي",
+      "workerShare": "حصة العمال",
+      "platformFee": "عمولة المنصة",
+      "perWorker": "التفاصيل لكل عامل",
+      "history": "سجل الإيرادات",
+      "completedBookings": "الحجوزات المكتملة",
+      "filters": {
+        "7d": "7أيام",
+        "30d": "30يوم",
+        "90d": "3أشهر",
+        "1y": "سنة"
+      }
+    },
+    "penalty": {
+      "add": "إضافة عقوبة",
+      "reason": "السبب",
+      "amount": "المبلغ (MRU)",
+      "confirm": "تطبيق العقوبة",
+      "target": "عقوبة لـ",
+      "list": "العقوبات",
+      "noPenalties": "لا توجد عقوبات مسجلة"
+    },
+    "reviews": {
+      "title": "آراء العملاء",
+      "clientPhone": "الهاتف",
+      "noReviews": "لا توجد آراء"
+    },
+    "task": {
+      "approve": "قبول المهمة",
+      "reject": "رفض المهمة"
+    },
+    "charts": {
+      "title": "إحصائيات المنصة",
+      "daily": "يومياً",
+      "weekly": "أسبوعياً",
+      "monthly": "شهرياً",
+      "totalTasks": "إجمالي المهام",
+      "totalBookings": "إجمالي الحجوزات",
+      "newUsers": "مستخدمون جدد",
+      "growth": "معدل النمو",
+      "tasksAndBookings": "المهام والحجوزات",
+      "usersTrend": "اتجاه المستخدمين",
+      "distribution": "التوزيع العام"
+    },
+    "chart": {
+      "title": "إحصائيات المنصة",
+      "daily": "يومي",
+      "weekly": "أسبوعي",
+      "monthly": "شهري"
+    }
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "markAll": "تعيين الكل كمقروء",
+    "empty": "لا توجد إشعارات",
+    "unread": "غير مقروءة",
+    "patterns": {
+      "selected": "تم اختيارك للمهمة: {{taskName}}",
+      "newOffer": "تم تقديم عرض جديد لمهمتك: {{taskName}}",
+      "offerAccepted": "تم قبول عرضك للمهمة: {{taskName}}",
+      "offerRejected": "تم رفض عرضك للمهمة: {{taskName}}",
+      "taskCompleted": "تم إكمال المهمة: {{taskName}}",
+      "bookingConfirmed": "تم تأكيد حجزك: {{date}}",
+      "newBooking": "لديك طلب حجز جديد لليوم: {{date}}",
+      "workerVerified": "تم توثيق حسابك كعامل بنجاح",
+      "taskApproved": "تمت الموافقة على مهمتك: {{taskName}} وهي الآن مرئية للجميع",
+      "workerAccepted": "العامل {{workerName}} قبل العمل على: {{taskName}}",
+      "workerRefused": "العامل {{workerName}} رفض العمل على: {{taskName}}",
+      "identitySubmitted": "العامل {{workerName}} قدّم وثيقة الهوية للمراجعة",
+      "workerPendingApproval": "طلب تسجيل عامل جديد بانتظار الموافقة: {{workerName}}",
+      "workerApproved": "تم قبول العامل {{workerName}}",
+      "workerRejected": "تم رفض العامل {{workerName}}",
+      "taskRejected": "تم رفض مهمتك: {{taskName}}",
+      "taskCancelled": "تم إلغاء المهمة: {{taskName}}",
+      "bookingCancelled": "تم إلغاء الحجز: {{date}}"
+    }
+  },
+  "common": {
+    "all": "الكل",
+    "days": {
+      "sun": "الأحد",
+      "mon": "الاثنين",
+      "tue": "الثلاثاء",
+      "wed": "الأربعاء",
+      "thu": "الخميس",
+      "fri": "الجمعة",
+      "sat": "السبت"
+    },
+    "week": "أسبوع",
+    "week_short": "أسبوع {{n}}",
+    "select": "اختر",
+    "optional": "اختياري",
+    "loading": "جارٍ التحميل...",
+    "error": "حدث خطأ ما",
+    "retry": "إعادة المحاولة",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "back": "رجوع",
+    "confirm": "تأكيد",
+    "info": "معلومات",
+    "comments": "تعليقات",
+    "profession": "المهنة",
+    "status": "الحالة",
+    "worker": "عامل",
+    "client": "عميل",
+    "search": "بحث",
+    "filter": "تصفية",
+    "noData": "لا توجد بيانات",
+    "success": "تمت العملية بنجاح",
+    "viewMore": "عرض المزيد",
+    "view": "عرض",
+    "close": "إغلاق",
+    "or": "أو",
+    "submitting": "جارٍ الإرسال...",
+    "perDay": "/يوم",
+    "stars": "نجوم",
+    "loggingIn": "جارٍ تسجيل الدخول...",
+    "loggingOut": "جارٍ تسجيل الخروج...",
+    "you": "أنت"
+  },
+  "profile": {
+    "title": "ملفي الشخصي",
+    "name": "الاسم",
+    "phone": "الهاتف",
+    "update": "تحديث الملف",
+    "success": "تم تحديث الملف بنجاح",
+    "changePassword": "تغيير كلمة المرور",
+    "currentPassword": "كلمة المرور الحالية",
+    "newPassword": "كلمة المرور الجديدة",
+    "confirmPassword": "تأكيد كلمة المرور"
+  },
+  "errors": {
+    "required": "هذا الحقل مطلوب",
+    "invalidPhone": "رقم الهاتف غير صالح",
+    "passwordMismatch": "كلمتا المرور غير متطابقتين",
+    "minPassword": "يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل",
+    "serverError": "خطأ في الخادم. يرجى المحاولة مجدداً.",
+    "unauthorized": "انتهت الجلسة. يرجى تسجيل الدخول مجدداً.",
+    "notFound": "المورد غير موجود",
+    "workerPhotoRequired": "يرجى رفع صورة العامل قبل إرسال الطلب.",
+    "identityRequired": "يرجى رفع بطاقة الهوية (الوجه الأمامي).",
+    "passwordRequired": "يرجى إدخال كلمة المرور الحالية والجديدة معًا",
+    "workerDataLoadError": "تعذر تحميل بيانات العامل.",
+    "identityOpenError": "تعذر فتح وثيقة الهوية.",
+    "workerProfileDeleteError": "تعذر حذف ملف العامل.",
+    "workerProfileUpdateError": "تعذر تحديث ملف العامل.",
+    "workerBusy": "يجب أن تكون متاحًا لتقديم عرض أو التعليق. يرجى تحديث حالتك في إعدادات الملف الشخصي.",
+    "passwordComplexity": "يجب أن تحتوي كلمة المرور على حرف ورقم واحد على الأقل"
+  }
+}

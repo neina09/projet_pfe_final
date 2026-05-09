@@ -1,0 +1,8 @@
+target
+.mvn/wrapper/dists
+uploads
+.idea
+*.log
+build_output.txt
+build_errors.txt
+test_results*.txt

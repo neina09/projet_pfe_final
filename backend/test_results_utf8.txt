@@ -1,0 +1,293 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------------------< com.backend:Projet >-------------------------
+[INFO] Building Projet 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ Projet ---
+[INFO] Copying 3 resources from src\main\resources to target\classes
+[INFO] Copying 0 resource from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ Projet ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ Projet ---
+[INFO] Copying 1 resource from src\test\resources to target\test-classes
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ Projet ---
+[INFO] Nothing to compile - all classes are up to date.
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ Projet ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.backend.Projet.controller.AuthenticationControllerTest
+12:54:48.559 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.backend.Projet.controller.AuthenticationControllerTest]: AuthenticationControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+12:54:48.987 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.backend.Projet.ProjetApplication for test class com.backend.Projet.controller.AuthenticationControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.3)
+
+2026-04-20T12:54:51.053Z  WARN 25848 --- [backend] [           main] ory$DuplicateJsonObjectContextCustomizer : 
+
+Found multiple occurrences of org.json.JSONObject on the class path:
+
+	jar:file:/C:/Users/youss/.m2/repository/org/json/json/20240303/json-20240303.jar!/org/json/JSONObject.class
+	jar:file:/C:/Users/youss/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar!/org/json/JSONObject.class
+
+You may wish to exclude one of them to ensure predictable runtime behavior
+
+2026-04-20T12:54:51.119Z  INFO 25848 --- [backend] [           main] c.b.P.c.AuthenticationControllerTest     : Starting AuthenticationControllerTest using Java 21.0.10 with PID 25848 (started by DELL5320 in C:\Users\youss\Desktop\Projet Fin de etuide\backend)
+2026-04-20T12:54:51.121Z  INFO 25848 --- [backend] [           main] c.b.P.c.AuthenticationControllerTest     : The following 1 profile is active: "test"
+.\mvnw.cmd : Mockito is 
+currently self-attaching to 
+enable the inline-mock-maker. 
+This will no longer work in 
+future releases of the JDK. 
+Please add Mockito as an 
+agent to your build what is 
+described in Mockito's 
+documentation: https://javadoc
+.io/doc/org.mockito/mockito-co
+re/latest/org/mockito/Mockito.
+html#0.3
+Au caractère Ligne:1 : 1
++ .\mvnw.cmd test > 
+test_results.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo          : 
+    NotSpecified: (Mockito i  
+  s curr...ockito.html#0.3:   
+ String) [], RemoteExcepti    
+on
+    + FullyQualifiedErrorId : 
+    NativeCommandError
+ 
+Java HotSpot(TM) 64-Bit 
+Server VM warning: Sharing is 
+only supported for boot 
+loader classes because 
+bootstrap classpath has been 
+appended
+2026-04-20T12:54:55.434Z  WARN 25848 --- [backend] [           main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 48b2873a-9fe4-4ef7-b7f8-d2369a8bba95
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-04-20T12:54:56.727Z  INFO 25848 --- [backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-04-20T12:54:57.248Z  INFO 25848 --- [backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-04-20T12:54:57.249Z  INFO 25848 --- [backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-04-20T12:54:57.252Z  INFO 25848 --- [backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 3 ms
+2026-04-20T12:54:57.350Z  INFO 25848 --- [backend] [           main] c.b.P.c.AuthenticationControllerTest     : Started AuthenticationControllerTest in 8.136 seconds (process running for 9.915)
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 9.687 s -- in com.backend.Projet.controller.AuthenticationControllerTest
+[INFO] Running com.backend.Projet.controller.BookingControllerTest
+2026-04-20T12:54:58.029Z  INFO 25848 --- [backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.backend.Projet.controller.BookingControllerTest]: BookingControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-20T12:54:58.090Z  INFO 25848 --- [backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.backend.Projet.ProjetApplication for test class com.backend.Projet.controller.BookingControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.3)
+
+2026-04-20T12:54:58.199Z  WARN 25848 --- [backend] [           main] ory$DuplicateJsonObjectContextCustomizer : 
+
+Found multiple occurrences of org.json.JSONObject on the class path:
+
+	jar:file:/C:/Users/youss/.m2/repository/org/json/json/20240303/json-20240303.jar!/org/json/JSONObject.class
+	jar:file:/C:/Users/youss/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar!/org/json/JSONObject.class
+
+You may wish to exclude one of them to ensure predictable runtime behavior
+
+2026-04-20T12:54:58.204Z  INFO 25848 --- [backend] [           main] c.b.P.controller.BookingControllerTest   : Starting BookingControllerTest using Java 21.0.10 with PID 25848 (started by DELL5320 in C:\Users\youss\Desktop\Projet Fin de etuide\backend)
+2026-04-20T12:54:58.204Z  INFO 25848 --- [backend] [           main] c.b.P.controller.BookingControllerTest   : The following 1 profile is active: "test"
+2026-04-20T12:54:59.414Z  WARN 25848 --- [backend] [           main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 56e708f2-ee48-4c0f-9248-cb22c357c558
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-04-20T12:54:59.417Z  INFO 25848 --- [backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-04-20T12:54:59.468Z  INFO 25848 --- [backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-04-20T12:54:59.468Z  INFO 25848 --- [backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-04-20T12:54:59.470Z  INFO 25848 --- [backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
+2026-04-20T12:54:59.489Z  INFO 25848 --- [backend] [           main] c.b.P.controller.BookingControllerTest   : Started BookingControllerTest in 1.375 seconds (process running for 12.052)
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.558 s -- in com.backend.Projet.controller.BookingControllerTest
+[INFO] Running com.backend.Projet.ProjetApplicationTests
+2026-04-20T12:54:59.594Z  INFO 25848 --- [backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.backend.Projet.ProjetApplicationTests]: ProjetApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-20T12:54:59.622Z  INFO 25848 --- [backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.backend.Projet.ProjetApplication for test class com.backend.Projet.ProjetApplicationTests
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.3)
+
+2026-04-20T12:54:59.713Z  WARN 25848 --- [backend] [           main] ory$DuplicateJsonObjectContextCustomizer : 
+
+Found multiple occurrences of org.json.JSONObject on the class path:
+
+	jar:file:/C:/Users/youss/.m2/repository/org/json/json/20240303/json-20240303.jar!/org/json/JSONObject.class
+	jar:file:/C:/Users/youss/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar!/org/json/JSONObject.class
+
+You may wish to exclude one of them to ensure predictable runtime behavior
+
+2026-04-20T12:54:59.717Z  INFO 25848 --- [backend] [           main] c.backend.Projet.ProjetApplicationTests  : Starting ProjetApplicationTests using Java 21.0.10 with PID 25848 (started by DELL5320 in C:\Users\youss\Desktop\Projet Fin de etuide\backend)
+2026-04-20T12:54:59.718Z  INFO 25848 --- [backend] [           main] c.backend.Projet.ProjetApplicationTests  : The following 1 profile is active: "test"
+2026-04-20T12:55:01.177Z  INFO 25848 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-20T12:55:01.393Z  INFO 25848 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 159 ms. Found 7 JPA repository interfaces.
+2026-04-20T12:55:02.410Z  INFO 25848 --- [backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-20T12:55:02.568Z  INFO 25848 --- [backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.8.Final
+2026-04-20T12:55:02.641Z  INFO 25848 --- [backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-20T12:55:02.948Z  INFO 25848 --- [backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-20T12:55:03.017Z  INFO 25848 --- [backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-04-20T12:55:03.481Z  INFO 25848 --- [backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:testdb user=SA
+2026-04-20T12:55:03.484Z  INFO 25848 --- [backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-04-20T12:55:03.587Z  INFO 25848 --- [backend] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 2.3.232
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-20T12:55:05.500Z  INFO 25848 --- [backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-20T12:55:05.685Z  INFO 25848 --- [backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-20T12:55:06.862Z  WARN 25848 --- [backend] [           main] o.s.aop.framework.CglibAopProxy          : Unable to proxy interface-implementing method [public final void org.springframework.web.filter.OncePerRequestFilter.doFilter(jakarta.servlet.ServletRequest,jakarta.servlet.ServletResponse,jakarta.servlet.FilterChain) throws jakarta.servlet.ServletException,java.io.IOException] because it is marked as final, consider using interface-based JDK proxies instead.
+2026-04-20T12:55:06.862Z  WARN 25848 --- [backend] [           main] o.s.aop.framework.CglibAopProxy          : Unable to proxy interface-implementing method [public final void org.springframework.web.filter.GenericFilterBean.init(jakarta.servlet.FilterConfig) throws jakarta.servlet.ServletException] because it is marked as final, consider using interface-based JDK proxies instead.
+2026-04-20T12:55:07.105Z  INFO 25848 --- [backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-04-20T12:55:09.685Z  INFO 25848 --- [backend] [           main] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider
+2026-04-20T12:55:09.685Z  WARN 25848 --- [backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-04-20T12:55:11.017Z  INFO 25848 --- [backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-04-20T12:55:11.019Z  INFO 25848 --- [backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@2bd2edaf]]
+2026-04-20T12:55:11.020Z  INFO 25848 --- [backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-04-20T12:55:11.034Z  INFO 25848 --- [backend] [           main] c.backend.Projet.ProjetApplicationTests  : Started ProjetApplicationTests in 11.398 seconds (process running for 23.597)
+2026-04-20T12:55:11.043Z  WARN 25848 --- [backend] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+2026-04-20T12:55:11.044Z  WARN 25848 --- [backend] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.48 s -- in com.backend.Projet.ProjetApplicationTests
+[INFO] Running com.backend.Projet.SecurityConfigurationIntegrationTest
+2026-04-20T12:55:11.080Z  INFO 25848 --- [backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.backend.Projet.SecurityConfigurationIntegrationTest]: SecurityConfigurationIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-04-20T12:55:11.085Z  INFO 25848 --- [backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.backend.Projet.ProjetApplication for test class com.backend.Projet.SecurityConfigurationIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.3)
+
+2026-04-20T12:55:11.133Z  WARN 25848 --- [backend] [           main] ory$DuplicateJsonObjectContextCustomizer : 
+
+Found multiple occurrences of org.json.JSONObject on the class path:
+
+	jar:file:/C:/Users/youss/.m2/repository/org/json/json/20240303/json-20240303.jar!/org/json/JSONObject.class
+	jar:file:/C:/Users/youss/.m2/repository/com/vaadin/external/google/android-json/0.0.20131108.vaadin1/android-json-0.0.20131108.vaadin1.jar!/org/json/JSONObject.class
+
+You may wish to exclude one of them to ensure predictable runtime behavior
+
+2026-04-20T12:55:11.134Z  INFO 25848 --- [backend] [           main] b.P.SecurityConfigurationIntegrationTest : Starting SecurityConfigurationIntegrationTest using Java 21.0.10 with PID 25848 (started by DELL5320 in C:\Users\youss\Desktop\Projet Fin de etuide\backend)
+2026-04-20T12:55:11.136Z  INFO 25848 --- [backend] [           main] b.P.SecurityConfigurationIntegrationTest : The following 1 profile is active: "test"
+2026-04-20T12:55:11.483Z  INFO 25848 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-04-20T12:55:11.517Z  INFO 25848 --- [backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 33 ms. Found 7 JPA repository interfaces.
+2026-04-20T12:55:11.687Z  INFO 25848 --- [backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-04-20T12:55:11.690Z  INFO 25848 --- [backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-04-20T12:55:11.705Z  INFO 25848 --- [backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-04-20T12:55:11.710Z  INFO 25848 --- [backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-04-20T12:55:11.712Z  INFO 25848 --- [backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:testdb user=SA
+2026-04-20T12:55:11.712Z  INFO 25848 --- [backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-04-20T12:55:11.712Z  INFO 25848 --- [backend] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-2)']
+	Database driver: undefined/unknown
+	Database version: 2.3.232
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-04-20T12:55:12.199Z  INFO 25848 --- [backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-04-20T12:55:12.284Z  INFO 25848 --- [backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-04-20T12:55:12.602Z  INFO 25848 --- [backend] [           main] eAuthenticationProviderManagerConfigurer : Global AuthenticationManager configured with AuthenticationProvider bean with name authenticationProvider
+2026-04-20T12:55:12.602Z  WARN 25848 --- [backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with an AuthenticationProvider bean. UserDetailsService beans will not be used by Spring Security for automatically configuring username/password login. Consider removing the AuthenticationProvider bean. Alternatively, consider using the UserDetailsService in a manually instantiated DaoAuthenticationProvider. If the current configuration is intentional, to turn off this warning, increase the logging level of 'org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer' to ERROR
+2026-04-20T12:55:13.079Z  INFO 25848 --- [backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-04-20T12:55:13.079Z  INFO 25848 --- [backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-04-20T12:55:13.080Z  INFO 25848 --- [backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-04-20T12:55:13.089Z  INFO 25848 --- [backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-04-20T12:55:13.089Z  INFO 25848 --- [backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@4138928c]]
+2026-04-20T12:55:13.090Z  INFO 25848 --- [backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-04-20T12:55:13.094Z  INFO 25848 --- [backend] [           main] b.P.SecurityConfigurationIntegrationTest : Started SecurityConfigurationIntegrationTest in 2.001 seconds (process running for 25.659)
+2026-04-20T12:55:13.096Z  WARN 25848 --- [backend] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+2026-04-20T12:55:13.096Z  WARN 25848 --- [backend] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'
+2026-04-20T12:55:13.892Z  INFO 25848 --- [backend] [           main] o.springdoc.api.AbstractOpenApiResource  : Init duration for springdoc-openapi is: 724 ms
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.235 s -- in com.backend.Projet.SecurityConfigurationIntegrationTest
+[INFO] Running com.backend.Projet.service.AdminServiceTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.538 s -- in com.backend.Projet.service.AdminServiceTest
+[INFO] Running com.backend.Projet.service.AuthenticationServiceTest
+2026-04-20T12:55:15.268Z  INFO 25848 --- [backend] [           main] c.b.P.service.AuthenticationService      : Starting account deletion for user ID: 7
+2026-04-20T12:55:15.270Z  INFO 25848 --- [backend] [           main] c.b.P.service.AuthenticationService      : User is a worker (ID: 3). Cleaning up worker data.
+2026-04-20T12:55:15.270Z  INFO 25848 --- [backend] [           main] c.b.P.service.AuthenticationService      : Successfully deleted user ID: 7
+2026-04-20T12:55:15.316Z  INFO 25848 --- [backend] [           main] c.b.P.service.AuthenticationService      : Reset password requested for unknown phone 22111111
+[ERROR] Tests run: 8, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.440 s <<< FAILURE! -- in com.backend.Projet.service.AuthenticationServiceTest
+[ERROR] com.backend.Projet.service.AuthenticationServiceTest.forgotPasswordShouldSendSixDigitResetCodeBySms -- Time elapsed: 0.345 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <6> but was: <8>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:150)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:145)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:531)
+	at com.backend.Projet.service.AuthenticationServiceTest.forgotPasswordShouldSendSixDigitResetCodeBySms(AuthenticationServiceTest.java:206)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+[INFO] Running com.backend.Projet.service.BookingServiceTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.094 s -- in com.backend.Projet.service.BookingServiceTest
+[INFO] Running com.backend.Projet.service.FileStorageServiceTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.104 s -- in com.backend.Projet.service.FileStorageServiceTest
+[INFO] Running com.backend.Projet.service.TaskServiceTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.045 s -- in com.backend.Projet.service.TaskServiceTest
+[INFO] Running com.backend.Projet.service.WorkerServiceTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in com.backend.Projet.service.WorkerServiceTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   AuthenticationServiceTest.forgotPasswordShouldSendSixDigitResetCodeBySms:206 expected: <6> but was: <8>
+[INFO] 
+[ERROR] Tests run: 33, Failures: 1, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  30.230 s
+[INFO] Finished at: 2026-04-20T12:55:15Z
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.2:test (default-test) on project Projet: There are test failures.
+[ERROR] 
+[ERROR] See C:\Users\youss\Desktop\Projet Fin de etuide\backend\target\surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

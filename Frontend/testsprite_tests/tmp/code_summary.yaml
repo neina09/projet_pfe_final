@@ -1,0 +1,36 @@
+version: "2"
+type: frontend
+tech_stack:
+  - react
+  - vite
+  - tailwindcss
+  - react-router-dom
+  - framer-motion
+routes:
+  - path: /workers/:id
+    file: src/pages/workers/WorkerProfile.jsx
+    auth_required: false
+    description: Worker profile details page
+features:
+  - name: SplashScreen Animation
+    description: Render animated Ommalak logo with framer-motion ripple effect and dot loaders.
+    files:
+      - src/components/SplashScreen.jsx
+    user_interactions:
+      - View logo animation
+  - name: Navigation Brand Logo
+    description: Dynamic brand logo name translation between French (Ommalak) and Arabic (عمــــالك) based on selected language.
+    files:
+      - src/components/layout/Navbar.jsx
+    user_interactions:
+      - View brand name in navbar based on language
+  - name: Worker Profile Contact Information
+    description: Display worker location (city), phone number, and salary expectations (daily rate in MRU).
+    files:
+      - src/pages/workers/WorkerProfile.jsx
+    entry_route: /workers/:id
+    user_interactions:
+      - View worker's city or location
+      - View worker's phone number
+      - View worker's daily rate / salary expectation
+known_limitations: []
