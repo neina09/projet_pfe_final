@@ -15,8 +15,10 @@ import Input from '../../components/ui/Input'
 import { Textarea } from '../../components/ui/Input'
 import { PageLoader } from '../../components/ui/Spinner'
 import StarRating from '../../components/ui/StarRating'
+import MapPicker from '../../components/ui/MapPicker'
 import { normalizeWorker } from '../../lib/normalizers'
 import { endpoint } from '../../api/endpoints'
+import { formatAddress } from '../../lib/utils'
 
 export default function WorkerProfile() {
   const { t } = useTranslation()
@@ -29,20 +31,35 @@ export default function WorkerProfile() {
   const [loading, setLoading] = useState(true)
   const [bookingOpen, setBookingOpen] = useState(false)
   const [lightboxSrc, setLightboxSrc] = useState(null)
-  const [bookingForm, setBookingForm] = useState({ date: '', address: '', price: '', description: '' })
+  const [bookingForm, setBookingForm] = useState({ date: '', address: '', locationDetails: '', description: '', clientPhone: user?.phone || '' })
   const [submitting, setSubmitting] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
+  const [showMap, setShowMap] = useState(false)
+  const [formErrors, setFormErrors] = useState({})
 
   useEffect(() => {
-    workersApi.getById(id)
-      .then((r) => {
+    let active = true
+    const fetchWorker = async () => {
+      // If we already have the right worker, don't flash the loader
+      if (!worker || String(worker.id) !== String(id)) {
+        setLoading(true)
+      }
+      
+      try {
+        const r = await workersApi.getById(id)
+        if (!active) return
         const nextWorker = normalizeWorker(r.data)
         setWorker(nextWorker)
         setReviews(nextWorker.reviews || [])
-      })
-      .catch(() => navigate('/workers'))
-      .finally(() => setLoading(false))
+      } catch {
+        if (active) navigate('/workers')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+    fetchWorker()
+    return () => { active = false }
   }, [id, navigate])
 
   useEffect(() => {
@@ -60,6 +77,24 @@ export default function WorkerProfile() {
   const handleBook = async (e) => {
     e.preventDefault()
     if (!user) return navigate('/login')
+    
+    const newErrors = {}
+    if (!bookingForm.date) newErrors.date = t('errors.required')
+    if (!bookingForm.address) newErrors.address = t('errors.required')
+    if (!bookingForm.description) newErrors.description = t('errors.required')
+
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors)
+      return
+    }
+
+    const selectedDate = new Date(bookingForm.date)
+    const now = new Date()
+    if (selectedDate < now) {
+      setFormErrors({ date: t('errors.dateInPast') })
+      return
+    }
+
     setSubmitting(true)
     setErrorMsg('')
     try {
@@ -67,14 +102,21 @@ export default function WorkerProfile() {
         workerId: id,
         description: bookingForm.description,
         address: bookingForm.address,
+        locationDetails: bookingForm.locationDetails,
         bookingDate: bookingForm.date,
-        price: bookingForm.price ? Number(bookingForm.price) : undefined,
+        clientPhone: bookingForm.clientPhone,
       })
       setBookingOpen(false)
       setSuccessMsg(t('common.success'))
       setTimeout(() => setSuccessMsg(''), 3000)
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || err.message || t('common.error'))
+      // Check for conflict error (409 or specific message)
+      const errorData = err.response?.data
+      if (err.response?.status === 409 || errorData?.message?.toLowerCase().includes('already booked') || errorData?.message?.toLowerCase().includes('conflict')) {
+        setErrorMsg(t('errors.conflict'))
+      } else {
+        setErrorMsg(errorData?.message || err.message || t('common.error'))
+      }
     }
     setSubmitting(false)
   }
@@ -123,26 +165,48 @@ export default function WorkerProfile() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sidebar */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1 flex flex-col gap-4">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }} 
+            animate={{ opacity: 1, x: 0 }} 
+            className="lg:col-span-1 lg:sticky lg:top-24 self-start flex flex-col gap-4"
+          >
             <div className="card p-6 text-center">
               {/* Profile picture */}
-              {profileImage ? (
-                <img
-                  src={profileImage}
-                  alt={name}
-                  className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-primary-100 dark:border-primary-900 shadow-md"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-3xl mx-auto mb-4 shadow-md">
-                  {initials}
-                </div>
-              )}
+              <div className="w-24 h-24 rounded-full mx-auto mb-4 border-4 border-primary-100 dark:border-primary-900 shadow-md overflow-hidden bg-primary-500 flex items-center justify-center">
+                {profileImage ? (
+                  <>
+                    <img
+                      src={profileImage}
+                      alt={name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="hidden w-full h-full items-center justify-center text-3xl font-bold text-white uppercase">
+                      {(name || '?')[0]}
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-3xl font-bold text-white uppercase">
+                    {(name || '?')[0]}
+                  </span>
+                )}
+              </div>
 
               <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-2">
                 {name}
-                {worker.verified && <CheckCircle2 size={17} className="text-primary-500" />}
+                {worker.verified && (
+                  <Badge variant="green" className="!bg-primary-500 !text-white border-none shadow-sm flex items-center gap-1 px-2 py-0.5 text-[10px]">
+                    <CheckCircle2 size={10} />
+                    {t('workers.card.verified', { defaultValue: 'موثق' })}
+                  </Badge>
+                )}
               </h1>
-              <p className="text-gray-500 text-sm mt-1">{t(`home.categories.${worker.job}`) || worker.profession}</p>
+              <p className="text-gray-500 text-sm mt-1">
+                {t(`home.categories.${worker.job || worker.profession}`, { defaultValue: worker.job || worker.profession }) || '—'}
+              </p>
 
               <div className="flex items-center justify-center gap-1 mt-2">
                 <Star size={15} className="fill-amber-400 text-amber-400" />
@@ -164,21 +228,13 @@ export default function WorkerProfile() {
               {(worker.city || worker.location) && (
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <MapPin size={15} className="text-primary-500" />
-                  <span>{worker.city || worker.location}</span>
+                  <span>{formatAddress(worker.city || worker.location)}</span>
                 </div>
               )}
               {worker.phone && (
                 <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                   <Phone size={15} className="text-primary-500" />
                   <span>{worker.phone}</span>
-                </div>
-              )}
-              {(worker.salaryExpectation || worker.salary || worker.dailyRate) && (
-                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-                  <Briefcase size={15} className="text-primary-500" />
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {worker.salaryExpectation || worker.salary || worker.dailyRate} MRU {t('common.perDay')}
-                  </span>
                 </div>
               )}
               {worker.createdAt && (
@@ -242,8 +298,13 @@ export default function WorkerProfile() {
             )}
 
             <div className="card p-5">
-              <h2 className="font-semibold text-gray-900 dark:text-white mb-4">
-                {t('workers.profile.reviews')}
+              <h2 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center justify-between">
+                <span>{t('workers.profile.reviews')}</span>
+                {reviews.length > 0 && (
+                  <span className="text-xs text-gray-400 font-normal">
+                    {reviews.length > 5 ? t('common.viewMore', { defaultValue: 'آخر 5 تقييمات' }) : `${reviews.length}`}
+                  </span>
+                )}
               </h2>
 
               {reviews.length === 0 ? (
@@ -251,33 +312,70 @@ export default function WorkerProfile() {
                   {t('common.noData')}
                 </p>
               ) : (
-                <div className="flex flex-col gap-4">
-                  {reviews.map((review, index) => (
-                    <div
-                      key={review.id || `${review.userId || 'review'}-${index}`}
-                      className="rounded-2xl border border-gray-100 dark:border-gray-800 p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div>
-                          <h3 className="font-medium text-gray-900 dark:text-white">
-                            {review.clientName || review.userName || review.authorName || review.user?.name || t('common.client')}
-                          </h3>
-                          {review.createdAt && (
-                            <p className="text-xs text-gray-400 mt-1">
-                              {new Date(review.createdAt).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                        <StarRating value={review.stars || review.rating || 0} readOnly size={16} />
-                      </div>
+                <div className="flex flex-col gap-3">
+                  {[...reviews].reverse().slice(0, 5).map((review, index) => {
+                    const reviewerName = review.clientName || review.userName || review.authorName || review.user?.name || t('common.client')
+                    const reviewerPhoto = review.userImageUrl || review.clientProfilePicture || review.userProfilePicture || review.profilePictureUrl || review.user?.profilePictureUrl || ''
+                    const reviewerInitials = reviewerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                    const dateStr = review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ''
 
-                      {(review.comment || review.message || review.review) && (
-                        <p className="text-sm leading-7 text-gray-600 dark:text-gray-300">
-                          {review.comment || review.message || review.review}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                    return (
+                      <motion.div
+                        key={review.id || `review-${index}`}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.06 }}
+                        className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3 h-fit self-start"
+                      >
+                        {/* Row 1: Avatar + Name + Date + Stars */}
+                        <div className="flex items-center gap-2.5">
+                          {/* Avatar */}
+                          {reviewerPhoto ? (
+                            <img
+                              src={reviewerPhoto.startsWith('http') ? reviewerPhoto : endpoint(reviewerPhoto)}
+                              alt={reviewerName}
+                              className="w-8 h-8 rounded-full object-cover flex-shrink-0 border-2 border-white dark:border-gray-700 shadow-sm"
+                              onError={e => { 
+                                e.target.onerror = null; 
+                                e.target.style.display = 'none'; 
+                                if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+                            style={{ display: reviewerPhoto ? 'none' : 'flex' }}
+                          >
+                            {reviewerInitials}
+                          </div>
+
+                          {/* Name + Date */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-1.5 flex-wrap">
+                              <span className="font-semibold text-xs text-gray-900 dark:text-white truncate">
+                                {reviewerName}
+                              </span>
+                              {dateStr && (
+                                <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                                  {dateStr}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Stars */}
+                          <StarRating value={review.stars || review.rating || 0} readOnly size={12} />
+                        </div>
+
+                        {/* Comment */}
+                        {(review.comment || review.message || review.review) && (
+                          <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300 mt-2 ps-11">
+                            {review.comment || review.message || review.review}
+                          </p>
+                        )}
+                      </motion.div>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -309,8 +407,8 @@ export default function WorkerProfile() {
         </AnimatePresence>
 
         {/* Booking Modal */}
-        <Modal open={bookingOpen} onClose={() => { setBookingOpen(false); setErrorMsg('') }} title={t('bookings.create')}>
-          <form onSubmit={handleBook} className="flex flex-col gap-4">
+        <Modal open={bookingOpen} onClose={() => { setBookingOpen(false); setErrorMsg(''); setFormErrors({}) }} title={t('bookings.create')}>
+          <form onSubmit={handleBook} className="flex flex-col gap-4" noValidate>
             {errorMsg && (
               <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs">
                 {errorMsg}
@@ -321,12 +419,76 @@ export default function WorkerProfile() {
               type="datetime-local"
               value={bookingForm.date}
               min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
-              onChange={e => setBookingForm(f => ({ ...f, date: e.target.value }))}
+              onChange={e => {
+                setBookingForm(f => ({ ...f, date: e.target.value }))
+                if (formErrors.date) setFormErrors(prev => ({ ...prev, date: null }))
+              }}
+              error={formErrors.date}
               required
             />
-            <Input label={t('tasks.form.location')} value={bookingForm.address} onChange={e => setBookingForm(f => ({ ...f, address: e.target.value }))} required />
-            <Input label={t('tasks.form.budget')} type="number" value={bookingForm.price} onChange={e => setBookingForm(f => ({ ...f, price: e.target.value }))} />
-            <Textarea label={t('bookings.form.description')} value={bookingForm.description} onChange={e => setBookingForm(f => ({ ...f, description: e.target.value }))} required />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowMap(!showMap)}
+                  className="text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1"
+                >
+                  <MapPin size={14} />
+                  {showMap ? t('becomeWorker.form.typeAddress') : t('becomeWorker.form.selectOnMap')}
+                </button>
+              </div>
+              
+              {showMap && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                  <MapPicker onLocationSelect={({ address }) => {
+                    setBookingForm(f => ({ ...f, address }));
+                    if (formErrors.address) setFormErrors(prev => ({ ...prev, address: null }));
+                    setShowMap(false);
+                  }} />
+                </motion.div>
+              )}
+            </div>
+
+            <Input 
+              label={t('tasks.form.location')} 
+              value={bookingForm.address} 
+              onChange={e => {
+                setBookingForm(f => ({ ...f, address: e.target.value }))
+                if (formErrors.address) setFormErrors(prev => ({ ...prev, address: null }))
+              }}
+              placeholder={t('becomeWorker.form.locationPlaceholder')}
+              error={formErrors.address}
+              required 
+            />
+
+            <Input 
+              label={t('bookings.form.locationDetails')} 
+              value={bookingForm.locationDetails} 
+              onChange={e => setBookingForm(f => ({ ...f, locationDetails: e.target.value }))}
+              placeholder={t('becomeWorker.form.locationPlaceholder')}
+              required
+            />
+
+            <Textarea 
+              label={t('bookings.form.description')} 
+              value={bookingForm.description} 
+              onChange={e => {
+                setBookingForm(f => ({ ...f, description: e.target.value }))
+                if (formErrors.description) setFormErrors(prev => ({ ...prev, description: null }))
+              }} 
+              error={formErrors.description}
+              required 
+            />
+
+            <div className="grid grid-cols-1 gap-4">
+              <Input
+                label={t('auth.login.phone')}
+                value={bookingForm.clientPhone}
+                onChange={e => setBookingForm(f => ({ ...f, clientPhone: e.target.value }))}
+                placeholder="22334455"
+                required
+              />
+            </div>
             <div className="flex gap-2 mt-2">
               <Button type="button" variant="secondary" onClick={() => setBookingOpen(false)} className="flex-1">{t('common.cancel')}</Button>
               <Button type="submit" loading={submitting} className="flex-1">{t('bookings.form.submit')}</Button>

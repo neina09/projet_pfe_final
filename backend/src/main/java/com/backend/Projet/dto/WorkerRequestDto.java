@@ -30,8 +30,7 @@ public class WorkerRequestDto {
     @Size(max = 1000, message = "Bio must not exceed 1000 characters")
     private String bio;
 
-    @Min(value = 0, message = "Salary must be positive")
-    private int salary;
+
 
     @NotBlank(message = "National ID number is required")
     @Pattern(regexp = "^\\d{10}$", message = "National ID number must be exactly 10 digits (Mauritanian NNI)")

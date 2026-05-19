@@ -2,6 +2,7 @@ package com.backend.Projet.controller;
 
 import com.backend.Projet.dto.BookingRequestDto;
 import com.backend.Projet.dto.BookingResponseDto;
+import com.backend.Projet.dto.BookingUpdateDto;
 import com.backend.Projet.model.User;
 import com.backend.Projet.service.BookingService;
 import jakarta.validation.Valid;
@@ -24,6 +25,14 @@ public class BookingController {
             @Valid @RequestBody BookingRequestDto input,
             @AuthenticationPrincipal User currentUser) {
         return ResponseEntity.ok(bookingService.createBooking(input, currentUser));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<BookingResponseDto> updateBooking(
+            @PathVariable Long id,
+            @Valid @RequestBody BookingUpdateDto input,
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(bookingService.updateBooking(id, input, currentUser));
     }
 
     @GetMapping("/my-bookings")

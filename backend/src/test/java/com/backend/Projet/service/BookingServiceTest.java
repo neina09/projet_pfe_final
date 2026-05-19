@@ -79,7 +79,7 @@ class BookingServiceTest {
                 .job("Electrician")
                 .phoneNumber("0611223344")
                 .address("Casablanca")
-                .salary(400)
+
                 .availability(WorkerAvailability.AVAILABLE)
                 .verificationStatus(WorkerVerificationStatus.VERIFIED)
                 .user(workerAccount)
@@ -93,7 +93,6 @@ class BookingServiceTest {
                 .description("Install lights")
                 .address("Casablanca")
                 .bookingDate(LocalDateTime.now().plusDays(1))
-                .price(250.0)
                 .build();
 
         when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
@@ -136,7 +135,6 @@ class BookingServiceTest {
                 .description("Install lights")
                 .address("Casablanca")
                 .bookingDate(LocalDateTime.now().plusDays(1))
-                .price(250.0)
                 .build();
 
         when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));
@@ -174,7 +172,6 @@ class BookingServiceTest {
                 .description("Install lights")
                 .address("Casablanca")
                 .bookingDate(LocalDateTime.now().plusDays(1))
-                .price(250.0)
                 .build();
 
         when(bookingRepository.findByUserId(1L)).thenReturn(List.of(booking));
@@ -213,7 +210,6 @@ class BookingServiceTest {
                 .description("Install lights")
                 .address("Casablanca")
                 .bookingDate(LocalDateTime.now().plusDays(1))
-                .price(250.0)
                 .build();
 
         when(bookingRepository.findById(5L)).thenReturn(Optional.of(booking));

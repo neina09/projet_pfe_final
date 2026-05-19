@@ -18,4 +18,5 @@ export const authApi = {
   },
   forgotPassword: (phone)                          => api.post('/auth/forgot-password', { phone }),
   resetPassword:  (_phone, code, newPassword)      => api.post('/auth/reset-password', { token: code, newPassword }),
+  deleteAccount:  ()                               => api.delete('/users/me'),
 }

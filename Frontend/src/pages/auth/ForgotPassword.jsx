@@ -6,6 +6,7 @@ import { authApi } from '../../api/auth'
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
 import Layout from '../../components/layout/Layout'
+import { validatePhone } from '../../lib/validators'
 
 export default function ForgotPassword() {
   const { t } = useTranslation()
@@ -16,13 +17,29 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!phone.trim()) return
+    if (!validatePhone(phone)) {
+      setError('errors.invalidMauritanianPhone')
+      return
+    }
+
     setLoading(true)
     setError('')
     try {
       await authApi.forgotPassword(phone)
       navigate('/verify-otp', { state: { phone, mode: 'reset' } })
     } catch (err) {
-      setError(err.response?.data?.message || t('errors.serverError'))
+      const errorMsg = err.response?.data?.message || ''
+      let msg = errorMsg || t('errors.serverError')
+      
+      // Clean up field prefixes first
+      if (msg.includes(': ')) msg = msg.split(': ')[1]
+
+      // Map to localized keys
+      if (msg.toLowerCase().includes('mauritanian') || msg.toLowerCase().includes('phone')) {
+        msg = 'errors.invalidMauritanianPhone'
+      }
+      setError(msg)
     } finally {
       setLoading(false)
     }
@@ -47,18 +64,22 @@ export default function ForgotPassword() {
                 type="tel"
                 placeholder="+222 XX XX XX XX"
                 value={phone}
-                onChange={e => setPhone(e.target.value)}
+                onChange={e => {
+                  setPhone(e.target.value)
+                  setError('')
+                }}
+                error={error.includes('.') ? t(error) : error}
                 required
               />
-              {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" loading={loading} className="w-full">
                 {t('auth.forgotPassword.submit')}
               </Button>
             </form>
 
             <p className="text-center text-sm text-gray-500 mt-6">
-              <Link to="/login" className="text-primary-600 dark:text-primary-400 hover:underline">
-                ← {t('auth.forgotPassword.backToLogin')}
+              <Link to="/login" className="text-primary-600 dark:text-primary-400 hover:underline inline-flex items-center justify-center gap-1">
+                <span className="inline-block rtl-flip">←</span>
+                <span>{t('auth.forgotPassword.backToLogin')}</span>
               </Link>
             </p>
           </div>

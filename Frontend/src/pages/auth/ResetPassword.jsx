@@ -6,6 +6,7 @@ import { authApi } from '../../api/auth'
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
 import Layout from '../../components/layout/Layout'
+import { validatePassword } from '../../lib/validators'
 
 export default function ResetPassword() {
   const { t } = useTranslation()
@@ -21,23 +22,27 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (form.newPassword !== form.confirm) return setError(t('errors.passwordMismatch'))
+    const passVal = validatePassword(form.newPassword)
+    if (!passVal.isValid) {
+      if (!passVal.isLongEnough) setError('errors.minPassword8')
+      else setError('errors.passwordComplexity')
+      return
+    }
+    if (form.newPassword !== form.confirm) return setError('errors.passwordMismatch')
+    
     setLoading(true)
     setError('')
     try {
       await authApi.resetPassword(state?.phone, state?.code, form.newPassword)
       navigate('/login')
     } catch (err) {
-      let msg = err.response?.data?.message || t('errors.serverError')
+      const errorMsg = err.response?.data?.message || ''
+      let msg = errorMsg || t('errors.serverError')
       
-      // Map common backend validation errors
-      if (msg.includes('at least one letter and one digit')) {
-        msg = t('errors.passwordComplexity')
-      }
-      
-      // Clean up field prefixes (e.g., "newPassword: ...")
-      if (msg.includes(': ')) {
-        msg = msg.split(': ')[1]
+      if (msg.includes(': ')) msg = msg.split(': ')[1]
+
+      if (msg.toLowerCase().includes('password')) {
+        msg = 'errors.passwordComplexity'
       }
       
       setError(msg)
@@ -60,17 +65,27 @@ export default function ResetPassword() {
                 label={t('auth.resetPassword.newPassword')}
                 type="password"
                 value={form.newPassword}
-                onChange={e => setForm(f => ({ ...f, newPassword: e.target.value }))}
+                onChange={e => {
+                  setForm(f => ({ ...f, newPassword: e.target.value }))
+                  setError('')
+                }}
+                error={error === 'errors.passwordComplexity' || error === 'errors.minPassword8' ? t(error) : ''}
                 required
               />
               <Input
                 label={t('auth.resetPassword.confirmPassword')}
                 type="password"
                 value={form.confirm}
-                onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))}
+                onChange={e => {
+                  setForm(f => ({ ...f, confirm: e.target.value }))
+                  setError('')
+                }}
+                error={error === 'errors.passwordMismatch' ? t(error) : ''}
                 required
               />
-              {error && <p className="text-sm text-red-500">{error}</p>}
+              {error && !error.includes('errors.') && (
+                <p className="text-sm text-red-500">{error}</p>
+              )}
               <Button type="submit" loading={loading} className="w-full">
                 {t('auth.resetPassword.submit')}
               </Button>

@@ -97,7 +97,7 @@ class TaskServiceTest {
                 .job("Plumber")
                 .phoneNumber("0611223344")
                 .address("Sale")
-                .salary(300)
+
                 .user(workerUser)
                 .availability(com.backend.Projet.model.WorkerAvailability.AVAILABLE)
                 .verificationStatus(WorkerVerificationStatus.VERIFIED)
@@ -154,7 +154,7 @@ class TaskServiceTest {
                 .job("Plumber")
                 .phoneNumber("0611223344")
                 .address("Sale")
-                .salary(300)
+
                 .user(workerUser)
                 .availability(com.backend.Projet.model.WorkerAvailability.AVAILABLE)
                 .verificationStatus(WorkerVerificationStatus.VERIFIED)
@@ -303,7 +303,6 @@ class TaskServiceTest {
                 .job("Plumber")
                 .phoneNumber("0611223344")
                 .address("Sale")
-                .salary(300)
                 .user(requestingUser)
                 .availability(WorkerAvailability.AVAILABLE)
                 .verificationStatus(WorkerVerificationStatus.VERIFIED)
@@ -315,7 +314,6 @@ class TaskServiceTest {
                 .job("Plumber")
                 .phoneNumber("0611223355")
                 .address("Rabat")
-                .salary(320)
                 .user(requestedUser)
                 .availability(WorkerAvailability.AVAILABLE)
                 .verificationStatus(WorkerVerificationStatus.VERIFIED)

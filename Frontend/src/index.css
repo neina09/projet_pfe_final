@@ -14,6 +14,8 @@
   --chart-3: 142 45% 60%;
   --chart-4: 48 96% 53%;
   --chart-5: 25 95% 53%;
+  --color-background-secondary: #f3f4f6;
+  --color-text-secondary: #4b5563;
 }
 .dark {
   --background: 222.2 84% 4.9%;
@@ -26,6 +28,8 @@
   --chart-3: 142 45% 65%;
   --chart-4: 48 96% 60%;
   --chart-5: 25 95% 60%;
+  --color-background-secondary: #1f2937;
+  --color-text-secondary: #9ca3af;
 }
 
 @layer base {
@@ -74,7 +78,7 @@
   }
 
   .badge {
-    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium;
   }
 
   .section-title {
@@ -105,4 +109,20 @@
   .section-title {
     @apply text-xl;
   }
+}
+
+/* Waving Hand Animation */
+@keyframes wave {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-wave {
+  animation: wave 2.5s infinite;
 }

@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { MapPin, Star, CheckCircle2, Calendar } from 'lucide-react'
+import { MapPin, Star, CheckCircle2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import Badge from '../ui/Badge'
 import Button from '../ui/Button'
 import { endpoint } from '../../api/endpoints'
+import { formatAddress } from '../../lib/utils'
 
 export default function WorkerCard({ worker, index = 0 }) {
   const { t } = useTranslation()
@@ -23,95 +24,91 @@ export default function WorkerCard({ worker, index = 0 }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      whileHover={{ y: -4 }}
-      className="card p-5 flex flex-col gap-4 hover:shadow-md transition-shadow"
+      whileHover={{ y: -4, shadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
+      className="group relative flex flex-col gap-2.5 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm transition-all duration-300 hover:border-primary-100 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-primary-900/30"
     >
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        {image ? (
-          <img
-            src={image}
-            alt={name}
-            className="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-primary-100 dark:border-primary-900"
-          />
-        ) : (
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-            {initials}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <h3 className="font-semibold text-gray-900 dark:text-white truncate">{name}</h3>
-            {worker.verified && (
-              <CheckCircle2 size={15} className="text-primary-500 flex-shrink-0" />
+      {/* Header Row */}
+      <div className="flex items-start gap-4">
+        <div className="relative flex-shrink-0">
+          <div className="h-14 w-14 overflow-hidden rounded-full ring-2 ring-gray-50 dark:ring-gray-800">
+            {image ? (
+              <>
+                <img
+                  src={image}
+                  alt={name}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div className="hidden h-full w-full items-center justify-center bg-gradient-to-br from-primary-400 to-primary-600 text-xl font-bold text-white">
+                  {initials}
+                </div>
+              </>
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-400 to-primary-600 text-xl font-bold text-white">
+                {initials}
+              </div>
             )}
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-            {t(`home.categories.${worker.profession}`, { defaultValue: worker.profession }) || worker.skills?.[0] || '—'}
-          </p>
-          <div className="flex items-center gap-1 mt-1">
-            <Star size={13} className="fill-amber-400 text-amber-400" />
-            <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-              {worker.rating?.toFixed(1) ?? '—'}
-            </span>
-          </div>
-        </div>
-        <Badge variant={isAvailable ? 'green' : 'gray'}>
-          {isAvailable
-            ? t('workers.card.available')
-            : t('workers.card.busy')}
-        </Badge>
-      </div>
-
-      {/* Info */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-gray-500 dark:text-gray-400">
-        {worker.location && (
-          <span className="flex items-center gap-1">
-            <MapPin size={12} /> {worker.location}
-          </span>
-        )}
-        {(worker.salary || worker.dailyRate) && (
-          <span className="flex items-center gap-1 text-primary-600 dark:text-primary-400 font-medium">
-            {worker.salary || worker.dailyRate} MRU{t('common.perDay')}
-          </span>
-        )}
-      </div>
-
-      {/* Skills */}
-      {worker.skills && worker.skills.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {worker.skills.slice(0, 3).map((s, i) => (
-            <span key={i} className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-lg">
-              {s}
-            </span>
-          ))}
-          {worker.skills.length > 3 && (
-            <span className="text-xs text-gray-400">+{worker.skills.length - 3}</span>
+          {worker.verified && (
+            <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white text-primary-600 shadow-sm dark:bg-gray-900 dark:text-primary-400">
+              <CheckCircle2 size={12} />
+            </div>
           )}
         </div>
-      )}
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="truncate text-base font-bold text-gray-900 dark:text-white">{name}</h3>
+            <Badge 
+              variant={isAvailable ? 'green' : 'gray'} 
+              className="rounded-full px-2 py-0.5 text-[9px] font-bold"
+            >
+              {isAvailable ? t('workers.card.available') : t('workers.card.busy')}
+            </Badge>
+          </div>
+          <p className="truncate text-xs font-medium text-primary-600 dark:text-primary-400">
+            {t(`home.categories.${worker.profession || worker.job}`, { defaultValue: worker.profession || worker.job }) || '—'}
+          </p>
+          
+          <div className="mt-2 flex items-center gap-3">
+            <div className="flex items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+              <Star size={12} className="fill-amber-400 text-amber-400" />
+              <span className="text-[10px] font-bold">{worker.rating?.toFixed(1) ?? '0.0'}</span>
+            </div>
+            
+            {worker.location && (
+              <div className="flex min-w-0 items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">
+                <MapPin size={12} className="flex-shrink-0 text-gray-400" />
+                <span className="truncate block">{formatAddress(worker.location)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Actions */}
-      <div className="flex gap-2 mt-auto pt-2">
+      <div className="mt-auto flex gap-1.5 pt-1">
         <Link to={`/workers/${worker.id}`} className="flex-1">
-          <Button variant="outline" size="sm" className="w-full text-sm py-2">
+          <Button variant="secondary" size="sm" className="w-full h-7 rounded-lg !py-0 text-[11px] font-bold flex items-center justify-center transition-all hover:bg-gray-100 dark:hover:bg-gray-800">
             {t('workers.card.viewProfile')}
           </Button>
         </Link>
         {isAvailable ? (
           <Link to={bookTarget} className="flex-1">
-            <Button size="sm" className="w-full text-sm py-2">
+            <Button size="sm" className="w-full h-7 rounded-lg !py-0 text-[11px] font-bold flex items-center justify-center">
               {t('workers.card.book')}
             </Button>
           </Link>
         ) : (
-          <div className="flex-1">
-            <Button size="sm" variant="secondary" className="w-full text-sm py-2" disabled>
-              {t('workers.card.busy')}
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" className="flex-1 h-7 rounded-lg !py-0 text-[11px] font-bold opacity-50 cursor-not-allowed flex items-center justify-center" disabled>
+            {t('workers.card.busy')}
+          </Button>
         )}
       </div>
     </motion.div>
   )
 }
+

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { useLang } from '../../context/LanguageContext'
 import NotificationDropdown from '../notifications/NotificationDropdown'
+import { endpoint } from '../../api/endpoints'
 
 export default function Navbar() {
   const { t } = useTranslation()
@@ -16,6 +17,11 @@ export default function Navbar() {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [imgError, setImgError] = useState(false)
+
+  useEffect(() => {
+    setImgError(false)
+  }, [user?.profilePictureUrl])
 
   const handleLogout = async () => {
     await logout()
@@ -32,20 +38,17 @@ export default function Navbar() {
     ...(isAdmin ? [{ to: '/admin', label: t('nav.admin') }] : []),
   ]
 
-  let name = "Ommalak"
-  if (lang === 'ar') {
-    name = "عمــــالك"
-  }
+  const siteName = "3ommalek | عمالك"
 
   return (
     <header className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-100 dark:border-gray-800">
       <nav className="page-container flex items-center justify-between h-16">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 font-bold text-xl text-primary-600 dark:text-primary-400">
-          <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center text-white text-sm font-bold">
-            <img src="/logo.svg" alt={name} />
+        <Link to="/" className="flex items-center gap-2.5 font-bold text-xl text-primary-600 dark:text-primary-400">
+          <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center shadow-sm overflow-hidden">
+            <img src="/logo.svg" alt="3ommalek" className="w-8 h-8" />
           </div>
-          <span className="hidden sm:block">{name}</span>
+          <span className="hidden sm:block">{siteName}</span>
         </Link>
 
         {/* Desktop links */}
@@ -100,8 +103,13 @@ export default function Navbar() {
                   className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold overflow-hidden border-2 border-white dark:border-gray-800 shadow-sm">
-                    {user.profilePictureUrl ? (
-                      <img src={user.profilePictureUrl} alt="" className="w-full h-full object-cover" />
+                    {user.profilePictureUrl && !imgError ? (
+                      <img 
+                        src={user.profilePictureUrl.startsWith('http') ? user.profilePictureUrl : endpoint(user.profilePictureUrl)} 
+                        alt="" 
+                        className="w-full h-full object-cover" 
+                        onError={() => setImgError(true)}
+                      />
                     ) : (
                       (user.name || user.fullName || 'U')[0].toUpperCase()
                     )}

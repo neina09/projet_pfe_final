@@ -37,11 +37,14 @@ public class Booking {
     @Column(nullable = false)
     private String address;
 
-    @Column(nullable = false)
+    @Column(name = "location_details")
+    private String locationDetails;
+
+    @Column(nullable = false, name = "booking_date")
     private LocalDateTime bookingDate;
 
-    @Column
-    private Double price;
+    @Column(name = "client_phone")
+    private String clientPhone;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

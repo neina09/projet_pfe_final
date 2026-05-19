@@ -10,6 +10,7 @@ import com.backend.Projet.model.User;
 import com.backend.Projet.model.Worker;
 import com.backend.Projet.model.WorkerAvailability;
 import com.backend.Projet.model.WorkerVerificationStatus;
+import com.backend.Projet.model.WorkerSubscription;
 import com.backend.Projet.repository.RatingRepository;
 import com.backend.Projet.repository.BookingRepository;
 import com.backend.Projet.repository.OfferRepository;
@@ -20,6 +21,7 @@ import com.backend.Projet.util.MauritaniaPhoneUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -42,6 +44,8 @@ public class WorkerService {
     private final com.backend.Projet.mapper.WorkerMapper workerMapper;
     private final FileStorageService fileStorageService;
     private final NotificationService notificationService;
+    private final WorkerSubscriptionService workerSubscriptionService;
+    private final ReceiptOcrService receiptOcrService;
 
 
     @Transactional
@@ -61,16 +65,24 @@ public class WorkerService {
                 .job(dto.getJob())
                 .address(dto.getAddress())
                 .bio(dto.getBio())
-                .salary(dto.getSalary())
                 .imageUrl(normalizeOptionalImageUrl(dto.getImageUrl()))
                 .nationalIdNumber(dto.getNationalIdNumber().trim())
                 .user(currentUser)
                 .availability(WorkerAvailability.AVAILABLE)
                 .verificationStatus(WorkerVerificationStatus.PENDING)
-                .verificationNotes("Pending admin review")
+                .verificationNotes("في انتظار مراجعة المدير")
+                .subscriptionRequired(true)
                 .build();
 
         Worker savedWorker = workerRepository.save(worker);
+        
+        // Sync image to user with explicit fetch
+        if (savedWorker.getImageUrl() != null) {
+            userRepository.findById(currentUser.getId()).ifPresent(u -> {
+                u.setImageUrl(savedWorker.getImageUrl());
+                userRepository.save(u);
+            });
+        }
 
         notificationService.sendNotificationToRole(
                 Role.ADMIN,
@@ -104,35 +116,53 @@ public class WorkerService {
                 .job(dto.getJob())
                 .address(dto.getAddress())
                 .bio(dto.getBio())
-                .salary(dto.getSalary())
                 .imageUrl(normalizeOptionalImageUrl(dto.getImageUrl()))
                 .nationalIdNumber(dto.getNationalIdNumber().trim())
                 .user(user)
                 .availability(WorkerAvailability.AVAILABLE)
                 .verificationStatus(WorkerVerificationStatus.VERIFIED)
-                .verificationNotes("Verified by admin")
+                .verificationNotes("تم التحقق من العامل بواسطة المدير")
+                .subscriptionRequired(true)
                 .build();
 
-        return workerMapper.toDto(workerRepository.save(worker), false);
+        Worker savedWorker = workerRepository.save(worker);
+        
+        // Sync image to user with explicit fetch
+        if (savedWorker.getImageUrl() != null) {
+            userRepository.findById(user.getId()).ifPresent(u -> {
+                u.setImageUrl(savedWorker.getImageUrl());
+                userRepository.save(u);
+            });
+        }
+
+        return workerMapper.toDto(savedWorker, false);
     }
 
     public List<WorkerResponseDto> getAllWorkers() {
         return workerRepository.findByVerificationStatus(WorkerVerificationStatus.VERIFIED)
                 .stream()
+                .peek(workerSubscriptionService::refreshSubscriptionState)
+                .filter(this::isVisibleInMarketplace)
                 .map(worker -> toDtoWithLiveAverage(worker, false))
                 .toList();
     }
 
     public Page<WorkerResponseDto> getAllWorkersPaged(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
-        return workerRepository.findByVerificationStatus(WorkerVerificationStatus.VERIFIED, pageable)
-                .map(worker -> toDtoWithLiveAverage(worker, false));
+        Page<Worker> workersPage = workerRepository.findByVerificationStatus(WorkerVerificationStatus.VERIFIED, pageable);
+        List<WorkerResponseDto> visibleWorkers = workersPage.getContent().stream()
+                .peek(workerSubscriptionService::refreshSubscriptionState)
+                .filter(this::isVisibleInMarketplace)
+                .map(worker -> toDtoWithLiveAverage(worker, false))
+                .toList();
+        return new PageImpl<>(visibleWorkers, pageable, visibleWorkers.size());
     }
 
     public WorkerResponseDto getWorkerById(Long id) {
         Worker worker = workerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Worker not found"));
-        if (worker.getVerificationStatus() != WorkerVerificationStatus.VERIFIED) {
+        workerSubscriptionService.refreshSubscriptionState(worker);
+        if (!isVisibleInMarketplace(worker)) {
             throw new ResourceNotFoundException("Worker not found");
         }
         return toDtoWithLiveAverage(worker, false);
@@ -146,7 +176,7 @@ public class WorkerService {
         if (!isAdmin && !isOwner) {
             throw new UnauthorizedException("Not authorized");
         }
-        return toDtoWithLiveAverage(worker, isOwner || isAdmin);
+        return enrichWithLiveOcrDetails(toDtoWithLiveAverage(worker, isOwner || isAdmin), worker, isOwner || isAdmin);
     }
 
     public WorkerResponseDto getMyWorkerProfile(User currentUser) {
@@ -176,7 +206,7 @@ public class WorkerService {
         if (dto.getBio() != null) {
             worker.setBio(dto.getBio());
         }
-        worker.setSalary(dto.getSalary());
+
         String imageUrl = normalizeOptionalImageUrl(dto.getImageUrl());
         if (imageUrl != null) {
             worker.setImageUrl(imageUrl);
@@ -184,7 +214,17 @@ public class WorkerService {
         if (isAdmin) {
             worker.setNationalIdNumber(dto.getNationalIdNumber().trim());
         }
-        return toDtoWithLiveAverage(workerRepository.save(worker), isOwner || isAdmin);
+        Worker savedWorker = workerRepository.save(worker);
+        
+        // Sync image to user with explicit fetch
+        if (savedWorker.getImageUrl() != null) {
+            userRepository.findById(savedWorker.getUser().getId()).ifPresent(u -> {
+                u.setImageUrl(savedWorker.getImageUrl());
+                userRepository.save(u);
+            });
+        }
+
+        return toDtoWithLiveAverage(savedWorker, isOwner || isAdmin);
     }
 
     @Transactional
@@ -231,6 +271,7 @@ public class WorkerService {
 
         fileStorageService.deleteStoredFile(worker.getImageUrl());
         fileStorageService.deleteStoredFile(worker.getIdentityDocumentUrl());
+        workerSubscriptionService.deleteSubscriptionArtifacts(worker);
 
         workerRepository.delete(worker);
     }
@@ -238,7 +279,8 @@ public class WorkerService {
     public List<WorkerResponseDto> getWorkersByAddress(String address) {
         return workerRepository.findByAddress(address)
                 .stream()
-                .filter(worker -> worker.getVerificationStatus() == WorkerVerificationStatus.VERIFIED)
+                .peek(workerSubscriptionService::refreshSubscriptionState)
+                .filter(this::isVisibleInMarketplace)
                 .map(worker -> workerMapper.toDto(worker, false))
                 .toList();
     }
@@ -246,7 +288,8 @@ public class WorkerService {
     public List<WorkerResponseDto> getWorkersByJob(String job) {
         return workerRepository.findByJob(job)
                 .stream()
-                .filter(worker -> worker.getVerificationStatus() == WorkerVerificationStatus.VERIFIED)
+                .peek(workerSubscriptionService::refreshSubscriptionState)
+                .filter(this::isVisibleInMarketplace)
                 .map(worker -> workerMapper.toDto(worker, false))
                 .toList();
     }
@@ -255,7 +298,11 @@ public class WorkerService {
         return workerRepository.findByAvailabilityAndVerificationStatus(
                         WorkerAvailability.AVAILABLE,
                         WorkerVerificationStatus.VERIFIED)
-                .stream().map(worker -> workerMapper.toDto(worker, false)).toList();
+                .stream()
+                .peek(workerSubscriptionService::refreshSubscriptionState)
+                .filter(this::isVisibleInMarketplace)
+                .map(worker -> workerMapper.toDto(worker, false))
+                .toList();
     }
 
     public List<WorkerResponseDto> getWorkersPendingVerification() {
@@ -291,12 +338,39 @@ public class WorkerService {
         return fileStorageService.detectContentType(worker.getIdentityDocumentUrl());
     }
 
+    public Resource getSubscriptionReceiptResource(Long id, User currentUser) {
+        Worker worker = getOwnedOrManagedWorker(id, currentUser);
+        if (worker.getSubscription() == null
+                || worker.getSubscription().getReceiptUrl() == null
+                || worker.getSubscription().getReceiptUrl().isBlank()) {
+            throw new ResourceNotFoundException("Subscription receipt not found");
+        }
+        return fileStorageService.loadAsResource(worker.getSubscription().getReceiptUrl());
+    }
+
+    public String getSubscriptionReceiptContentType(Long id, User currentUser) {
+        Worker worker = getOwnedOrManagedWorker(id, currentUser);
+        if (worker.getSubscription() == null
+                || worker.getSubscription().getReceiptUrl() == null
+                || worker.getSubscription().getReceiptUrl().isBlank()) {
+            throw new ResourceNotFoundException("Subscription receipt not found");
+        }
+        return fileStorageService.detectContentType(worker.getSubscription().getReceiptUrl());
+    }
+
     @Transactional
     public WorkerResponseDto uploadWorkerImage(Long id, MultipartFile file, User currentUser) {
         Worker worker = getOwnedOrManagedWorker(id, currentUser);
         String previousImageUrl = worker.getImageUrl();
         worker.setImageUrl(fileStorageService.storeWorkerImage(file));
         Worker savedWorker = workerRepository.save(worker);
+        
+        // Sync image to user with explicit fetch to avoid stale proxies
+        userRepository.findById(worker.getUser().getId()).ifPresent(u -> {
+            u.setImageUrl(savedWorker.getImageUrl());
+            userRepository.save(u);
+        });
+
         if (previousImageUrl != null && !previousImageUrl.isBlank() && !previousImageUrl.equals(savedWorker.getImageUrl())) {
             fileStorageService.deleteStoredFile(previousImageUrl);
         }
@@ -318,10 +392,10 @@ public class WorkerService {
         
         if (isAdmin) {
             worker.setVerificationStatus(WorkerVerificationStatus.VERIFIED);
-            worker.setVerificationNotes("Identity document uploaded by admin");
+            worker.setVerificationNotes("تم رفع وثيقة الهوية بواسطة المدير");
         } else {
             worker.setVerificationStatus(WorkerVerificationStatus.PENDING);
-            worker.setVerificationNotes("Identity document uploaded and waiting for admin review");
+            worker.setVerificationNotes("تم رفع وثيقة الهوية وهي في انتظار مراجعة المدير");
         }
         
         Worker savedWorker = workerRepository.save(worker);
@@ -351,8 +425,19 @@ public class WorkerService {
         if (worker.getIdentityDocumentUrl() == null || worker.getIdentityDocumentUrl().isBlank()) {
             throw new BusinessException("Identity document is required before verification");
         }
+        workerSubscriptionService.refreshSubscriptionState(worker);
+        if (worker.isSubscriptionRequired()) {
+            com.backend.Projet.model.WorkerSubscription sub = worker.getSubscription();
+            boolean paymentConfirmed = sub != null && (
+                sub.getPaymentStatus() == com.backend.Projet.model.SubscriptionPaymentStatus.APPROVED ||
+                sub.getPaymentStatus() == com.backend.Projet.model.SubscriptionPaymentStatus.AUTO_APPROVED
+            );
+            if (!paymentConfirmed) {
+                throw new BusinessException("يجب التحقق من دفع الاشتراك أولاً قبل الموافقة على العامل");
+            }
+        }
         worker.setVerificationStatus(WorkerVerificationStatus.VERIFIED);
-        worker.setVerificationNotes(notes == null || notes.isBlank() ? "Verified by admin" : notes.trim());
+        worker.setVerificationNotes(notes == null || notes.isBlank() ? "تم التحقق بواسطة المدير" : notes.trim());
         worker.setAvailability(WorkerAvailability.AVAILABLE);
         User workerUser = worker.getUser();
         workerUser.setRole(Role.WORKER);
@@ -376,7 +461,7 @@ public class WorkerService {
         Worker worker = workerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Worker not found"));
         worker.setVerificationStatus(WorkerVerificationStatus.REJECTED);
-        worker.setVerificationNotes(notes == null || notes.isBlank() ? "Rejected by admin" : notes.trim());
+        worker.setVerificationNotes(notes == null || notes.isBlank() ? "تم الرفض بواسطة المدير" : notes.trim());
         User workerUser = worker.getUser();
         workerUser.setRole(Role.USER);
         userRepository.save(workerUser);
@@ -436,6 +521,31 @@ public class WorkerService {
     private WorkerResponseDto toDtoWithLiveAverage(Worker worker, boolean includeSensitiveDetails) {
         Double avg = ratingRepository.calculateAverageRating(worker.getId());
         worker.setAverageRating(avg != null ? avg : 0.0);
+        workerSubscriptionService.refreshSubscriptionState(worker);
         return workerMapper.toDto(worker, includeSensitiveDetails);
+    }
+
+    private WorkerResponseDto enrichWithLiveOcrDetails(WorkerResponseDto dto, Worker worker, boolean includeSensitiveDetails) {
+        if (!includeSensitiveDetails || dto == null || worker == null) {
+            return dto;
+        }
+        WorkerSubscription subscription = worker.getSubscription();
+        if (subscription == null || subscription.getReceiptUrl() == null || subscription.getReceiptUrl().isBlank()) {
+            return dto;
+        }
+        ReceiptOcrAnalysis liveOcrAnalysis = receiptOcrService.analyzeReceipt(
+                subscription.getReceiptUrl(),
+                subscription.getTransferReference(),
+                subscription.getAmount()
+        );
+        return dto.toBuilder()
+                .subscriptionVerificationNotes(liveOcrAnalysis.getSummary())
+                .subscriptionOcrRawText(liveOcrAnalysis.getRawText())
+                .build();
+    }
+
+    private boolean isVisibleInMarketplace(Worker worker) {
+        return worker.getVerificationStatus() == WorkerVerificationStatus.VERIFIED
+                && (!worker.isSubscriptionRequired() || workerSubscriptionService.isSubscriptionActive(worker));
     }
 }

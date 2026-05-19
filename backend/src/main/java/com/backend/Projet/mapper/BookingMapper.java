@@ -12,10 +12,8 @@ public class BookingMapper {
             return null;
         }
         String workerImageUrl = booking.getWorker().getImageUrl();
-        if ((workerImageUrl == null || workerImageUrl.isBlank())
-                && booking.getWorker().getUser() != null
-                && booking.getWorker().getUser().getImageUrl() != null
-                && !booking.getWorker().getUser().getImageUrl().isBlank()) {
+        // Unified image logic: prioritize User's image if linked
+        if (booking.getWorker().getUser() != null && booking.getWorker().getUser().getImageUrl() != null && !booking.getWorker().getUser().getImageUrl().isBlank()) {
             workerImageUrl = booking.getWorker().getUser().getImageUrl();
         }
 
@@ -30,10 +28,12 @@ public class BookingMapper {
                 .userName(booking.getUser().getName())
                 .userImageUrl(booking.getUser().getImageUrl())
                 .address(booking.getAddress())
+                .locationDetails(booking.getLocationDetails())
                 .bookingDate(booking.getBookingDate())
+                .clientPhone(booking.getClientPhone())
+                .workerPhone(booking.getWorker().getPhoneNumber() != null ? booking.getWorker().getPhoneNumber() : (booking.getWorker().getUser() != null ? booking.getWorker().getUser().getPhone() : null))
                 .status(booking.getStatus())
                 .description(booking.getDescription())
-                .price(booking.getPrice())
                 .createdAt(booking.getCreatedAt())
                 .build();
     }

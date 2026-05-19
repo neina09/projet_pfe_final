@@ -65,7 +65,7 @@ export default function Home() {
             <motion.div variants={fadeUp} className="flex flex-wrap gap-3">
               <Link to="/workers" className="btn-primary inline-flex items-center gap-2">
                 {t('home.hero.ctaWorkers')}
-                <ArrowRight size={16} />
+                <ArrowRight size={16} className="rtl-flip" />
               </Link>
               <Link to="/tasks" className="btn-outline inline-flex items-center gap-2">
                 {t('home.hero.ctaTasks')}
@@ -166,7 +166,7 @@ export default function Home() {
               <p className="text-gray-500 dark:text-gray-400 mt-1">{t('home.featuredWorkers.subtitle')}</p>
             </div>
             <Link to="/workers" className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline flex items-center gap-1">
-              {t('home.featuredWorkers.viewAll')} <ArrowRight size={14} />
+              {t('home.featuredWorkers.viewAll')} <ArrowRight size={14} className="rtl-flip" />
             </Link>
           </div>
 
@@ -191,7 +191,7 @@ export default function Home() {
             <h2 className="text-3xl font-bold mb-3">{t('nav.becomeWorker')}</h2>
             <p className="text-primary-100 mb-6 max-w-md mx-auto">{t('becomeWorker.subtitle')}</p>
             <Link to="/become-worker" className="bg-white text-primary-600 font-semibold px-8 py-3 rounded-xl hover:bg-primary-50 transition-colors inline-flex items-center gap-2">
-              {t('nav.becomeWorker')} <ArrowRight size={16} />
+              {t('nav.becomeWorker')} <ArrowRight size={16} className="rtl-flip" />
             </Link>
           </motion.div>
         </div>

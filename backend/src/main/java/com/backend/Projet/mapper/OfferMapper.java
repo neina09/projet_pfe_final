@@ -12,10 +12,8 @@ public class OfferMapper {
             return null;
         }
         String workerImageUrl = offer.getWorker().getImageUrl();
-        if ((workerImageUrl == null || workerImageUrl.isBlank())
-                && offer.getWorker().getUser() != null
-                && offer.getWorker().getUser().getImageUrl() != null
-                && !offer.getWorker().getUser().getImageUrl().isBlank()) {
+        // Unified image logic: prioritize User's image if linked
+        if (offer.getWorker().getUser() != null && offer.getWorker().getUser().getImageUrl() != null && !offer.getWorker().getUser().getImageUrl().isBlank()) {
             workerImageUrl = offer.getWorker().getUser().getImageUrl();
         }
         return OfferResponseDto.builder()

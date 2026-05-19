@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { motion } from 'framer-motion'
+import { Link, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import api from '../../api/axios'
 import {
   Briefcase,
   CalendarCheck,
@@ -20,6 +22,8 @@ import {
   XCircle,
   ChevronDown,
   LogOut,
+  CreditCard,
+  Receipt,
 } from 'lucide-react'
 import { adminApi } from '../../api/admin'
 import { authApi } from '../../api/auth'
@@ -29,10 +33,18 @@ import Layout from '../../components/layout/Layout'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
-import Input, { Select } from '../../components/ui/Input'
+import Input, { Select, Textarea } from '../../components/ui/Input'
+import { formatAddress } from '../../lib/utils'
 import { PageLoader } from '../../components/ui/Spinner'
 import { endpoint } from '../../api/endpoints'
 import AdminCharts from '../../components/Admincharts'
+import { bookingsApi } from '../../api/bookings'
+import { tasksApi } from '../../api/tasks'
+import { normalizeBooking, normalizeTask } from '../../lib/normalizers'
+import StarRating from '../../components/ui/StarRating'
+import { Star } from 'lucide-react'
+import TasksList from '../../components/dashboard/TasksList'
+import BookingsList from '../../components/dashboard/BookingsList'
 
 const taskStatusVariant = {
   PENDING_REVIEW: 'yellow',
@@ -59,7 +71,6 @@ const emptyWorkerForm = {
   phoneNumber: '',
   job: '',
   address: '',
-  salary: '',
   nationalIdNumber: '',
   bio: '',
 }
@@ -114,6 +125,26 @@ export default function AdminDashboard() {
     return t(`home.categories.${trimmedJob}`, { defaultValue: trimmedJob })
   }
 
+  const formatSubscriptionStatus = (status) => {
+    switch (status) {
+      case 'APPROVED':
+        return 'تم التحقق من الدفع (إدارة)'
+      case 'AUTO_APPROVED':
+        return 'تم التحقق تلقائياً (OCR)'
+      case 'EXPIRED':
+        return 'منتهي'
+      case 'NOT_SUBMITTED':
+        return 'غير مدفوع'
+      case 'PENDING':
+      case 'PENDING_REVIEW':
+        return 'قيد المراجعة'
+      case 'REJECTED':
+        return 'مرفوض'
+      default:
+        return status || t('workerDashboard.subscription.notPaid', { defaultValue: 'غير مدفوع' })
+    }
+  }
+
   const [dashboard, setDashboard] = useState(null)
   const [workers, setWorkers] = useState([])
   const [users, setUsers] = useState([])
@@ -122,12 +153,22 @@ export default function AdminDashboard() {
   const [workerFilter, setWorkerFilter] = useState('ALL') // 'ALL' or 'PENDING'
   const [taskFilter, setTaskFilter] = useState('PENDING')
   const [loading, setLoading] = useState(true)
+  const [loadingWorkers, setLoadingWorkers] = useState(false)
   const [actioning, setActioning] = useState('')
+  const [workersError, setWorkersError] = useState('')
   const [selectedWorker, setSelectedWorker] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const [adminProfileImagePreview, setAdminProfileImagePreview] = useState(null)
   const fileRef = useRef(null)
   const [selectedTask, setSelectedTask] = useState(null)
+  const [myTasks, setMyTasks] = useState([])
+  const [myBookings, setMyBookings] = useState([])
+  const [loadingMyData, setLoadingMyData] = useState(false)
+  const [editingBooking, setEditingBooking] = useState(null)
+  const [editBookingForm, setEditBookingForm] = useState({ date: '', address: '', locationDetails: '', description: '', clientPhone: '' })
+  const [editBookingSubmitting, setEditBookingSubmitting] = useState(false)
+  const [editBookingError, setEditBookingError] = useState('')
+  const [cancellingBooking, setCancellingBooking] = useState(null)
   const [workerModalOpen, setWorkerModalOpen] = useState(false)
   const [taskModalOpen, setTaskModalOpen] = useState(false)
   const [workerFormOpen, setWorkerFormOpen] = useState(false)
@@ -137,9 +178,13 @@ export default function AdminDashboard() {
   const [workerImageFile, setWorkerImageFile] = useState(null)
   const [workerIdentityFront, setWorkerIdentityFront] = useState(null)
   const [workerIdentityBack, setWorkerIdentityBack] = useState(null)
+  const [workerSubscriptionReference, setWorkerSubscriptionReference] = useState('')
+  const [workerSubscriptionReceipt, setWorkerSubscriptionReceipt] = useState(null)
   const [viewingIdentityDocument, setViewingIdentityDocument] = useState(false)
   const [identityPreviewUrl, setIdentityPreviewUrl] = useState(null)
   const [identityPreviewOpen, setIdentityPreviewOpen] = useState(false)
+  const [previewTitle, setPreviewTitle] = useState('')
+  const [viewingSubscriptionReceipt, setViewingSubscriptionReceipt] = useState(false)
   const [adminProfileOpen, setAdminProfileOpen] = useState(false)
   const [adminPromotionOpen, setAdminPromotionOpen] = useState(false)
   const [adminCandidateId, setAdminCandidateId] = useState('')
@@ -147,7 +192,8 @@ export default function AdminDashboard() {
   const [adminProfileError, setAdminProfileError] = useState('')
   const [adminProfileSaving, setAdminProfileSaving] = useState(false)
   const [promotingAdmin, setPromotingAdmin] = useState(false)
-  const [activeSection, setActiveSection] = useState('DASHBOARD') // 'DASHBOARD' or 'WORKERS'
+  const location = useLocation()
+  const [activeSection, setActiveSection] = useState(location.state?.section || 'DASHBOARD') // 'DASHBOARD' or 'WORKERS'
   const [searchQuery, setSearchQuery] = useState('')
   const [adminProfileForm, setAdminProfileForm] = useState({
     username: '',
@@ -163,8 +209,18 @@ export default function AdminDashboard() {
   }
 
   const loadWorkers = async () => {
-    const res = await adminApi.getAllWorkers()
-    setWorkers(res.data || [])
+    setLoadingWorkers(true)
+    setWorkersError('')
+    try {
+      const res = await adminApi.getAllWorkers()
+      setWorkers(res.data || [])
+    } catch (err) {
+      console.error('Failed to load workers:', err)
+      setWorkers([])
+      setWorkersError(t('errors.workerDataLoadError'))
+    } finally {
+      setLoadingWorkers(false)
+    }
   }
 
   const loadUsers = async () => {
@@ -198,15 +254,108 @@ export default function AdminDashboard() {
   }, [activeSection])
 
   useEffect(() => {
+    if (activeSection === 'WORKERS') {
+      loadWorkers()
+    }
+  }, [activeSection])
+
+  useEffect(() => {
     reloadAll().finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
-    setAdminProfileForm({
-      confirmPassword: '',
+    if (location.state?.section) {
+      setActiveSection(location.state.section)
+    }
+  }, [location.state?.section])
+
+  const loadMyData = async () => {
+    setLoadingMyData(true)
+    try {
+      const [tasksRes, bookingsRes] = await Promise.all([
+        tasksApi.getMy(),
+        bookingsApi.getMy()
+      ])
+      const rawTasks = tasksRes.data?.content || tasksRes.data || []
+      const rawBookings = bookingsRes.data?.content || bookingsRes.data || []
+      setMyTasks(rawTasks.map(normalizeTask).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
+      setMyBookings(rawBookings.map(normalizeBooking).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
+    } catch (err) {
+      console.error('Failed to load my data:', err)
+    } finally {
+      setLoadingMyData(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeSection === 'MY_TASKS' || activeSection === 'MY_BOOKINGS') {
+      loadMyData()
+    }
+  }, [activeSection])
+
+  const openEditBooking = (b) => {
+    setEditingBooking(b)
+    setEditBookingForm({
+      date: b.date ? new Date(b.date).toISOString().slice(0, 16) : '',
+      address: b.address || '',
+      locationDetails: b.locationDetails || '',
+      description: b.description || '',
+      clientPhone: b.clientPhone || user?.phone || '',
     })
+    setEditBookingError('')
+  }
+
+  const handleUpdateBooking = async (e) => {
+    e.preventDefault()
+    if (!editingBooking) return
+    setEditBookingSubmitting(true)
+    setEditBookingError('')
+    try {
+      const res = await bookingsApi.update(editingBooking.id, {
+        description: editBookingForm.description,
+        address: editBookingForm.address,
+        locationDetails: editBookingForm.locationDetails,
+        bookingDate: editBookingForm.date,
+        clientPhone: editBookingForm.clientPhone,
+      })
+      const updated = normalizeBooking(res.data)
+      setMyBookings(prev => prev.map(b => b.id === updated.id ? updated : b))
+      setEditingBooking(null)
+    } catch (err) {
+      console.error('Update booking error:', err.response?.status, err.response?.data)
+      const data = err.response?.data
+      setEditBookingError(data?.message || data?.error || t('common.error'))
+    } finally {
+      setEditBookingSubmitting(false)
+    }
+  }
+
+  const handleCancelMyBooking = async (id) => {
+    setCancellingBooking(id)
+    try {
+      await bookingsApi.cancel(id)
+      setMyBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'CANCELLED' } : b))
+    } catch {}
+    setCancellingBooking(null)
+  }
+
+  const handleDeleteMyBooking = async (id) => {
+    if (!window.confirm(t('common.confirm'))) return
+    try {
+      await bookingsApi.delete(id)
+      setMyBookings(prev => prev.filter(b => b.id !== id))
+    } catch {}
+  }
+
+  useEffect(() => {
+    setAdminProfileForm(prev => ({
+      ...prev,
+      username: user?.username || '',
+      phone: user?.phone || '',
+      confirmPassword: '',
+    }))
     setAdminProfileImagePreview(user?.profilePictureUrl || null)
-  }, [user?.name, user?.fullName, user?.phone, user?.profilePictureUrl])
+  }, [user])
 
   const workerUserIds = useMemo(() => new Set(workers.map(worker => worker.userId).filter(Boolean)), [workers])
   const availableUsers = useMemo(
@@ -228,18 +377,19 @@ export default function AdminDashboard() {
         w.address?.toLowerCase().includes(q)
       )
     }
-    return result
+    return [...result].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
   }, [workers, workerFilter, searchQuery])
 
   const allFilteredTasks = useMemo(() => {
     // Priority: 1. adminTasks (full list), 2. dashboard.latestPendingTasks (summary list)
     const tasks = adminTasks.length > 0 ? adminTasks : (dashboard?.latestPendingTasks || [])
     
-    // Admin only sees Pending tasks as per request
-    return tasks.filter((task) => {
-      const normalizedStatus = (task.status === 'PENDING_REVIEW' || task.status === 'PENDING') ? 'PENDING' : task.status
-      return normalizedStatus === 'PENDING'
-    })
+    return tasks
+      .filter((task) => {
+        const normalizedStatus = (task.status === 'PENDING_REVIEW' || task.status === 'PENDING') ? 'PENDING' : task.status
+        return normalizedStatus === 'PENDING'
+      })
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
   }, [adminTasks, dashboard?.latestPendingTasks])
 
   const setFormValue = (key) => (event) => {
@@ -252,6 +402,8 @@ export default function AdminDashboard() {
     setWorkerImageFile(null)
     setWorkerIdentityFront(null)
     setWorkerIdentityBack(null)
+    setWorkerSubscriptionReference('')
+    setWorkerSubscriptionReceipt(null)
     setWorkerFormError('')
   }
 
@@ -289,7 +441,6 @@ export default function AdminDashboard() {
         phoneNumber: data.phoneNumber || '',
         job: data.job || '',
         address: data.address || '',
-        salary: String(data.salary ?? ''),
         nationalIdNumber: data.nationalIdNumber || '',
         bio: data.bio || '',
       })
@@ -321,6 +472,22 @@ export default function AdminDashboard() {
         await adminApi.rejectWorker(workerId)
       }
       setWorkerModalOpen(false)
+      await reloadAll()
+    } finally {
+      setActioning('')
+    }
+  }
+
+  const handleSubscriptionAction = async (workerId, action) => {
+    setActioning(`subscription-${workerId}-${action}`)
+    try {
+      if (action === 'approve') {
+        await adminApi.approveSubscription(workerId)
+      } else {
+        await adminApi.rejectSubscription(workerId)
+      }
+      const res = await adminApi.getWorkerDetails(workerId)
+      setSelectedWorker(res.data)
       await reloadAll()
     } finally {
       setActioning('')
@@ -384,12 +551,38 @@ export default function AdminDashboard() {
     try {
       const response = await workersApi.getIdentityDocument(selectedWorker.id)
       const blobUrl = window.URL.createObjectURL(response.data)
+      setPreviewTitle(t('admin.workerTable.viewIdentity'))
       setIdentityPreviewUrl(blobUrl)
       setIdentityPreviewOpen(true)
     } catch (error) {
       setWorkerFormError(error.response?.data?.message || t('errors.identityOpenError'))
     } finally {
       setViewingIdentityDocument(false)
+    }
+  }
+
+  const handleOpenSubscriptionReceipt = async () => {
+    if (!selectedWorker?.id) return
+    setWorkerFormError('')
+    setViewingSubscriptionReceipt(true)
+
+    try {
+      const response = await workersApi.getSubscriptionReceipt(selectedWorker.id)
+      const blob = response.data
+      const blobUrl = window.URL.createObjectURL(blob)
+      const contentType = blob?.type || ''
+
+      if (contentType.includes('pdf')) {
+        window.open(blobUrl, '_blank', 'noopener,noreferrer')
+      } else {
+        setPreviewTitle(t('workerDashboard.subscription.receipt', { defaultValue: 'وصل الدفع' }))
+        setIdentityPreviewUrl(blobUrl)
+        setIdentityPreviewOpen(true)
+      }
+    } catch (error) {
+      setWorkerFormError(error.response?.data?.message || t('common.error'))
+    } finally {
+      setViewingSubscriptionReceipt(false)
     }
   }
 
@@ -442,7 +635,6 @@ export default function AdminDashboard() {
         phoneNumber: workerForm.phoneNumber.trim(),
         job: workerForm.job.trim(),
         address: workerForm.address.trim(),
-        salary: Number(workerForm.salary || 0),
         nationalIdNumber: workerForm.nationalIdNumber.trim(),
         bio: workerForm.bio?.trim() || '',
       }
@@ -452,6 +644,12 @@ export default function AdminDashboard() {
       if (workerFormMode === 'create') {
         if (!workerForm.userId) {
           throw new Error(t('errors.required'))
+        }
+        if (!workerSubscriptionReference.trim()) {
+          throw new Error(t('workerDashboard.subscription.referencePlaceholder', { defaultValue: 'أدخل رقم العملية بعد التحويل' }))
+        }
+        if (!workerSubscriptionReceipt) {
+          throw new Error(t('workerDashboard.subscription.receiptRequired', { defaultValue: 'يرجى رفع وصل الدفع أولاً.' }))
         }
 
         const created = await adminApi.createWorker(workerForm.userId, payload)
@@ -467,6 +665,15 @@ export default function AdminDashboard() {
       const identityFile = await mergeIdentityImages(workerIdentityFront, workerIdentityBack)
       if (identityFile && workerId) {
         await workersApi.uploadIdentityDocument(workerId, identityFile)
+      }
+      if (workerFormMode === 'create' && workerSubscriptionReceipt && workerId) {
+        await workersApi.submitSubscriptionReceipt(workerId, workerSubscriptionReceipt, workerSubscriptionReference.trim())
+      }
+
+      // Refresh profile if we edited ourselves
+      const editedUserId = workerFormMode === 'create' ? workerForm.userId : selectedWorker?.userId
+      if (String(editedUserId) === String(user?.id)) {
+        try { await refreshProfile() } catch {}
       }
 
       setWorkerFormOpen(false)
@@ -527,6 +734,18 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleDeleteAccount = async () => {
+    if (!window.confirm(t('profile.confirmDeleteAccount'))) return
+    setAdminProfileSaving(true)
+    try {
+      await authApi.deleteAccount()
+      window.location.href = '/'
+    } catch (error) {
+      setAdminProfileError(error.response?.data?.message || error.message || t('errors.serverError'))
+      setAdminProfileSaving(false)
+    }
+  }
+
   const handlePromoteToAdmin = async (event) => {
     event.preventDefault()
     if (!adminCandidateId) {
@@ -561,6 +780,13 @@ export default function AdminDashboard() {
 
   const workerImage = resolveAsset(selectedWorker?.imageUrl)
   const workerIdentityDocument = resolveAsset(selectedWorker?.identityDocumentUrl)
+  const hasSubscriptionReceipt = Boolean(selectedWorker?.subscriptionReceiptUrl)
+  const hasSubscriptionReference = Boolean(selectedWorker?.subscriptionTransferReference)
+  const paymentVerified = Boolean(selectedWorker?.subscriptionActive)
+  const paymentPendingReview = selectedWorker?.subscriptionPaymentStatus === 'PENDING'
+  const paymentOcrVerified = selectedWorker?.subscriptionPaymentStatus === 'AUTO_APPROVED' && !paymentVerified
+  const paymentAdminVerified = selectedWorker?.subscriptionPaymentStatus === 'APPROVED'
+  const canApproveWorker = !selectedWorker?.subscriptionRequired || paymentVerified || paymentAdminVerified
   const taskLatitude = selectedTask?.latitude
   const taskLongitude = selectedTask?.longitude
   const hasTaskCoordinates = Number.isFinite(Number(taskLatitude)) && Number.isFinite(Number(taskLongitude))
@@ -587,6 +813,18 @@ export default function AdminDashboard() {
               {t('admin.manageWorkers')}
             </Button>
             <Button
+              variant={activeSection === 'MY_TASKS' ? 'primary' : 'secondary'}
+              onClick={() => setActiveSection('MY_TASKS')}
+            >
+              {t('dashboard.myTasks')}
+            </Button>
+            <Button
+              variant={activeSection === 'MY_BOOKINGS' ? 'primary' : 'secondary'}
+              onClick={() => setActiveSection('MY_BOOKINGS')}
+            >
+              {t('dashboard.myBookings')}
+            </Button>
+            <Button
               variant="secondary"
               onClick={() => {
                 setAdminProfileError('')
@@ -608,9 +846,8 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
 
-        {activeSection === 'DASHBOARD' ? (
+        {activeSection === 'DASHBOARD' && (
           <>
-
             {/* ======= ANALYTICS CHARTS ======= */}
             <div className="mb-8">
               <AdminCharts dashboard={dashboard} />
@@ -625,8 +862,11 @@ export default function AdminDashboard() {
                </Button>
             </div>
           </>
-        ) : activeSection === 'WORKERS' ? (
+        )}
+
+        {activeSection === 'WORKERS' && (
           <motion.div initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} className="card overflow-hidden">
+            {/* ... Workers section content ... */}
             <div className="bg-gray-50/50 p-6 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-800">
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
@@ -649,12 +889,12 @@ export default function AdminDashboard() {
               </div>
 
               <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-gray-800 pb-2">
-                <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
                   {['ALL', 'PENDING', 'VERIFIED', 'REJECTED'].map((filter) => (
                     <button
                       key={filter}
                       onClick={() => setWorkerFilter(filter)}
-                      className={`px-4 py-2 text-sm font-medium transition-all relative whitespace-nowrap ${
+                      className={`px-3 py-1.5 text-xs font-semibold transition-all relative whitespace-nowrap ${
                         workerFilter === filter
                           ? 'text-primary-600'
                           : 'text-gray-500 hover:text-gray-700'
@@ -682,6 +922,11 @@ export default function AdminDashboard() {
             </div>
 
             <div className="hidden md:block overflow-x-auto">
+              {workersError && (
+                <div className="px-6 py-4 text-sm text-rose-600 dark:text-rose-400">
+                  {workersError}
+                </div>
+              )}
               <table className="w-full text-right text-sm">
                 <thead>
                   <tr className="bg-gray-50/80 dark:bg-gray-900/60">
@@ -689,13 +934,18 @@ export default function AdminDashboard() {
                     <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">{t('admin.workerTable.job')}</th>
                     <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">{t('admin.workerTable.phone')}</th>
                     <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">{t('admin.workerTable.address')}</th>
-                    <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">{t('admin.workerTable.salary')}</th>
                     <th className="px-6 py-4 font-bold text-gray-900 dark:text-white">{t('admin.workerTable.status')}</th>
                     <th className="px-6 py-4 font-bold text-gray-900 dark:text-white text-center">{t('admin.workerTable.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {filteredWorkers.length === 0 ? (
+                  {loadingWorkers ? (
+                    <tr>
+                      <td colSpan="7" className="py-10 text-center text-gray-400">
+                        {t('common.loading')}
+                      </td>
+                    </tr>
+                  ) : filteredWorkers.length === 0 ? (
                     <tr>
                       <td colSpan="7" className="py-10 text-center text-gray-400">
                         {t('admin.noData')}
@@ -716,7 +966,7 @@ export default function AdminDashboard() {
                                 className="h-10 w-10 rounded-xl object-cover"
                               />
                             ) : (
-                              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/30 font-bold uppercase">
                                 {(worker.name || '?').slice(0, 1)}
                               </div>
                             )}
@@ -730,10 +980,7 @@ export default function AdminDashboard() {
                           {worker.phoneNumber || worker.userPhone || '-'}
                         </td>
                         <td className="px-6 py-4 text-gray-600 dark:text-gray-400 max-w-[150px] truncate">
-                          {worker.address || '-'}
-                        </td>
-                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                          {worker.salary || 0} <span className="text-[10px] text-gray-400 font-normal">MRU</span>
+                          {formatAddress(worker.address) || '-'}
                         </td>
                         <td className="px-6 py-4">
                           <Badge variant={workerStatusVariant[worker.verificationStatus] || 'gray'}>
@@ -778,17 +1025,13 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             </div>
-
-            {/* Mobile Card View */}
-            <div className="md:hidden grid grid-cols-1 gap-4 p-4">
-              {filteredWorkers.length === 0 ? (
-                <div className="py-10 text-center text-gray-400">
-                  {t('admin.noData')}
-                </div>
-              ) : (
-                filteredWorkers.map((worker) => (
-                  <div key={worker.id} className="card p-4 border border-gray-100 dark:border-gray-800">
-                    <div className="flex items-center justify-between mb-3">
+            
+            {/* Mobile View */}
+            <div className="md:hidden grid grid-cols-1 gap-3 p-3">
+              {filteredWorkers.map((worker) => (
+                <div key={worker.id} className="card p-3.5 border border-gray-100 dark:border-gray-800">
+                   {/* ... mobile card ... */}
+                   <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
                         {resolveAsset(worker.imageUrl) ? (
                           <img
@@ -802,8 +1045,8 @@ export default function AdminDashboard() {
                           </div>
                         )}
                         <div>
-                          <p className="font-bold text-gray-900 dark:text-white">{worker.name}</p>
-                          <p className="text-xs text-gray-500">{formatJob(worker.job)}</p>
+                          <p className="font-bold text-gray-900 dark:text-white text-sm">{worker.name}</p>
+                          <p className="text-[11px] text-gray-500">{formatJob(worker.job)}</p>
                         </div>
                       </div>
                       <Badge variant={workerStatusVariant[worker.verificationStatus] || 'gray'}>
@@ -811,18 +1054,10 @@ export default function AdminDashboard() {
                       </Badge>
                     </div>
                     
-                    <div className="space-y-2 mb-4 text-sm">
+                    <div className="space-y-1.5 mb-3 text-xs">
                       <div className="flex justify-between">
                         <span className="text-gray-500">{t('admin.workerTable.phone')}</span>
                         <span className="text-gray-900 dark:text-white" dir="ltr">{worker.phoneNumber || worker.userPhone || '-'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">{t('admin.workerTable.address')}</span>
-                        <span className="text-gray-900 dark:text-white truncate max-w-[150px]">{worker.address || '-'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">{t('admin.workerTable.salary')}</span>
-                        <span className="font-bold text-primary-600">{worker.salary || 0} MRU</span>
                       </div>
                     </div>
 
@@ -833,30 +1068,14 @@ export default function AdminDashboard() {
                       >
                         <Eye size={14} /> {t('common.view')}
                       </button>
-                      {worker.verificationStatus !== 'PENDING' && worker.verificationStatus !== 'REJECTED' && (
-                        <button
-                          onClick={() => startEditWorker(worker)}
-                          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400 text-xs font-medium"
-                        >
-                          <Pencil size={14} /> {t('common.edit')}
-                        </button>
-                      )}
-                      {worker.verificationStatus !== 'PENDING' && (
-                        <button
-                          onClick={() => handleDeleteWorker(worker.id)}
-                          className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 text-xs font-medium"
-                          disabled={actioning === `worker-${worker.id}-delete`}
-                        >
-                          <Trash2 size={14} /> {t('common.delete')}
-                        </button>
-                      )}
                     </div>
-                  </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           </motion.div>
-        ) : (
+        )}
+
+        {activeSection === 'TASKS' && (
           <motion.div initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} className="card overflow-hidden">
             <div className="bg-gray-50/50 p-6 dark:bg-gray-900/40 border-b border-gray-100 dark:border-gray-800">
               <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -876,8 +1095,6 @@ export default function AdminDashboard() {
             </div>
 
             <div className="p-6">
-              {/* Task filter removed as per admin request - only pending tasks shown */}
-
               {loadingTasks ? (
                 <div className="py-20 text-center">
                   <div className="w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
@@ -889,68 +1106,45 @@ export default function AdminDashboard() {
                   <p>{t('admin.noData')}</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5 items-start">
                   {allFilteredTasks.map((task) => (
                     <motion.div
                       layout
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       key={task.id}
-                      className="card p-5 group hover:border-primary-200 dark:hover:border-primary-900/50 transition-all border border-gray-100 dark:border-gray-800"
+                      className="card p-3.5 group hover:border-primary-200 dark:hover:border-primary-900/50 transition-all border border-gray-100 dark:border-gray-800"
                     >
-                      <div className="flex justify-between items-start mb-4">
+                      <div className="flex justify-between items-start mb-2.5">
                         <Badge variant={taskStatusVariant[task.status] || 'gray'}>
                           {task.status === 'PENDING_REVIEW' ? t('tasks.status.PENDING') : t(`tasks.status.${task.status}`)}
                         </Badge>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => openTaskModal(task)}
-                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                          >
-                            <Eye size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTask(task.id)}
-                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <button onClick={() => openTaskModal(task)} className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"><Eye size={16} /></button>
+                          <button onClick={() => handleDeleteTask(task.id)} className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 size={16} /></button>
                         </div>
                       </div>
 
-                      <h3 className="font-bold text-gray-900 dark:text-white mb-2 line-clamp-1">{task.title}</h3>
-                      
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <User size={14} className="text-gray-400" />
-                          <span className="truncate">{task.userName || '-'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <Briefcase size={14} className="text-gray-400" />
-                          <span className="truncate">{formatJob(task.profession)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <MapPin size={14} className="text-gray-400" />
-                          <span className="truncate line-clamp-1">{task.address || '-'}</span>
-                        </div>
+                      <h3 className="font-bold text-gray-900 dark:text-white text-sm mb-2 line-clamp-1">{task.title}</h3>
+                      <div className="space-y-2 mb-3 text-xs text-gray-600 dark:text-gray-400">
+                         <div className="flex items-center gap-2">
+                           <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0 border border-gray-200 dark:border-gray-700">
+                             <User size={12} className="text-gray-500 dark:text-gray-400" />
+                           </div>
+                           <span className="font-medium text-gray-800 dark:text-gray-200">{task.userName || '-'}</span>
+                         </div>
+                         <div className="flex items-center gap-2">
+                           <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0 border border-gray-200 dark:border-gray-700">
+                             <MapPin size={12} className="text-gray-500 dark:text-gray-400" />
+                           </div>
+                           <span className="truncate">{task.address || '-'}</span>
+                         </div>
                       </div>
 
                       {(task.status === 'PENDING' || task.status === 'PENDING_REVIEW') && (
                         <div className="flex gap-2 pt-2 border-t border-gray-50 dark:border-gray-800">
-                          <button
-                            onClick={() => handleTaskAction(task.id, 'approve')}
-                            className="px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 transition-colors flex items-center justify-center gap-1"
-                          >
-                            <CheckCircle2 size={12} />
-                            {t('admin.approve')}
-                          </button>
-                          <button
-                            onClick={() => handleTaskAction(task.id, 'reject')}
-                            className="px-2.5 py-1.5 text-[10px] font-bold rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors flex items-center justify-center gap-1"
-                          >
-                            <XCircle size={12} />
-                            {t('admin.reject')}
-                          </button>
+                          <button onClick={() => handleTaskAction(task.id, 'approve')} className="flex-1 py-1.5 rounded-lg bg-emerald-500 text-white text-[10px] font-bold">OK</button>
+                          <button onClick={() => handleTaskAction(task.id, 'reject')} className="flex-1 py-1.5 rounded-lg bg-red-100 text-red-600 text-[10px] font-bold">X</button>
                         </div>
                       )}
                     </motion.div>
@@ -960,20 +1154,57 @@ export default function AdminDashboard() {
             </div>
           </motion.div>
         )}
+
+        {activeSection === 'MY_TASKS' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card p-6">
+            <h2 className="text-xl font-bold mb-6">{t('dashboard.myTasks')}</h2>
+            {loadingMyData ? <PageLoader /> : (
+              <TasksList
+                tasks={myTasks}
+              />
+            )}
+          </motion.div>
+        )}
+
+        {activeSection === 'MY_BOOKINGS' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card p-6">
+            <h2 className="text-xl font-bold mb-6">{t('dashboard.myBookings')}</h2>
+            {loadingMyData ? <PageLoader /> : (
+              <BookingsList
+                bookings={myBookings}
+                onEdit={openEditBooking}
+                onCancel={handleCancelMyBooking}
+                onDelete={handleDeleteMyBooking}
+                cancelling={cancellingBooking}
+              />
+            )}
+          </motion.div>
+        )}
       </div>
 
       <Modal open={workerModalOpen} onClose={() => setWorkerModalOpen(false)} title={t('worker.profile.viewProfile')} size="lg">
         {selectedWorker && (
-          <div className="grid gap-6 md:grid-cols-[220px,1fr]">
-            <div className="space-y-4">
+          <div className="flex flex-col gap-6">
+            <div className="w-full">
               <div className="rounded-3xl border border-gray-100 p-4 text-center dark:border-gray-800">
-                {workerImage ? (
-                  <img src={workerImage} alt={selectedWorker.name} className="mx-auto mb-3 h-28 w-28 rounded-full object-cover" />
-                ) : (
-                  <div className="mx-auto mb-3 flex h-28 w-28 items-center justify-center rounded-full bg-primary-100 text-3xl font-bold text-primary-600">
-                    {(selectedWorker.name || '?').slice(0, 1)}
-                  </div>
-                )}
+                <div className="mx-auto mb-3 h-28 w-28 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center text-3xl font-bold text-primary-600 border-2 border-primary-50">
+                  {workerImage ? (
+                    <>
+                      <img 
+                        src={workerImage} 
+                        alt={selectedWorker.name} 
+                        className="h-full w-full object-cover" 
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'block';
+                        }}
+                      />
+                      <span style={{ display: 'none' }}>{(selectedWorker.name || '?').slice(0, 1).toUpperCase()}</span>
+                    </>
+                  ) : (
+                    <span>{(selectedWorker.name || '?').slice(0, 1).toUpperCase()}</span>
+                  )}
+                </div>
                 <h3 className="font-semibold text-gray-900 dark:text-white">{selectedWorker.name}</h3>
                 <p className="text-sm text-gray-500">{formatJob(selectedWorker.job)}</p>
               </div>
@@ -982,41 +1213,36 @@ export default function AdminDashboard() {
 
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
-                  <p className="mb-1 text-xs text-gray-500">{t('worker.user')}</p>
-                  <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-white"><UserSquare2 size={14} /> {selectedWorker.username || '-'}</p>
-                </div>
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
+                <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/50">
                   <p className="mb-1 text-xs text-gray-500">{t('admin.workerTable.status')}</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{t(`workerStatusLabel.${selectedWorker.verificationStatus}`) || selectedWorker.verificationStatus || '-'}</p>
+                  <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                    <ShieldCheck size={14} className="text-primary-500" />
+                    {t(`workerStatusLabel.${selectedWorker.verificationStatus}`) || selectedWorker.verificationStatus || '-'}
+                  </p>
                 </div>
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
+
+                <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/50">
                   <p className="mb-1 text-xs text-gray-500">{t('worker.phone')}</p>
-                  <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-white"><Phone size={14} /> {selectedWorker.phoneNumber || '-'}</p>
+                  <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                    <Phone size={14} className="text-primary-500" />
+                    <span dir="ltr">{selectedWorker.phoneNumber || selectedWorker.userPhone || '-'}</span>
+                  </p>
                 </div>
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
-                  <p className="mb-1 text-xs text-gray-500">{t('auth.login.phone')}</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{selectedWorker.userPhone || '-'}</p>
-                </div>
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
+
+                <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/50">
                   <p className="mb-1 text-xs text-gray-500">{t('worker.address')}</p>
-                  <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-white"><MapPin size={14} /> {selectedWorker.address || '-'}</p>
+                  <p className="flex items-start gap-2 font-medium text-gray-900 dark:text-white">
+                    <MapPin size={14} className="mt-0.5 flex-shrink-0 text-primary-500" />
+                    <span className="leading-relaxed">{formatAddress(selectedWorker.address) || '-'}</span>
+                  </p>
                 </div>
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
-                  <p className="mb-1 text-xs text-gray-500">{t('worker.dailySalary')}</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{selectedWorker.salary || 0} MRU</p>
-                </div>
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
+
+                <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/50">
                   <p className="mb-1 text-xs text-gray-500">{t('worker.nationalId')}</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{selectedWorker.nationalIdNumber || '-'}</p>
-                </div>
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
-                  <p className="mb-1 text-xs text-gray-500">{t('worker.user')} ID</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{selectedWorker.userId || '-'}</p>
-                </div>
-                <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
-                  <p className="mb-1 text-xs text-gray-500">{t('workerDashboard.availability')}</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{selectedWorker.availability === 'AVAILABLE' ? t('workerDashboard.available') : t('workerDashboard.busy')}</p>
+                  <p className="flex items-center gap-2 font-medium tracking-wider text-gray-900 dark:text-white">
+                    <CreditCard size={14} className="text-primary-500" />
+                    {selectedWorker.nationalIdNumber || '-'}
+                  </p>
                 </div>
               </div>
 
@@ -1040,14 +1266,76 @@ export default function AdminDashboard() {
                 </button>
               )}
 
+              {hasSubscriptionReceipt && (
+                <button
+                  type="button"
+                  onClick={handleOpenSubscriptionReceipt}
+                  disabled={viewingSubscriptionReceipt}
+                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:text-primary-400 dark:hover:bg-primary-900/20"
+                >
+                  <Receipt size={15} />
+                  {viewingSubscriptionReceipt && <span>{t('common.loading')}</span>}
+                  {t('workerDashboard.subscription.receipt', { defaultValue: 'وصل الدفع' })}
+                </button>
+              )}
+
               {selectedWorker.verificationNotes && (
                 <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
                   {selectedWorker.verificationNotes}
                 </div>
               )}
 
+              {/* Payment info - view only, OCR handles verification */}
+              {hasSubscriptionReceipt && (
+                <div className="rounded-2xl bg-gray-50 dark:bg-gray-900/40 p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <CreditCard size={15} />
+                    <span>{t('admin.workerTable.paymentInfo', { defaultValue: 'معلومات الدفع' })}</span>
+                  </div>
+
+                  {/* Reference number */}
+                  {selectedWorker?.subscriptionTransferReference && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">{t('workerDashboard.subscription.reference', { defaultValue: 'رقم العملية' })}</span>
+                      <span className="font-bold text-gray-900 dark:text-white tracking-wider" dir="ltr">
+                        {selectedWorker.subscriptionTransferReference}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Payment status from OCR */}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">{t('admin.workerTable.ocrStatus', { defaultValue: 'حالة التحقق' })}</span>
+                    <span className={`font-semibold ${
+                      paymentVerified || paymentAdminVerified || paymentOcrVerified
+                        ? 'text-emerald-600'
+                        : paymentPendingReview
+                          ? 'text-amber-600'
+                          : 'text-gray-500'
+                    }`}>
+                      {paymentVerified || paymentAdminVerified
+                        ? `✓ ${t('admin.workerTable.verifiedAuto', { defaultValue: 'تم التحقق تلقائياً' })}`
+                        : paymentOcrVerified
+                          ? `✓ ${t('admin.workerTable.verifiedOcr', { defaultValue: 'تم التحقق عبر OCR — الوصل مرفوع' })}`
+                          : paymentPendingReview
+                            ? `⏳ ${t('admin.workerTable.pendingOcr', { defaultValue: 'لم يتحقق OCR — الوصل مرفوع' })}`
+                            : t('admin.workerTable.noReceipt', { defaultValue: 'لم يُرفع وصل' })}
+                    </span>
+                  </div>
+
+
+                  {selectedWorker?.subscriptionOcrRawText && (
+                    <div className="mt-3 rounded-2xl bg-slate-50 px-4 py-3 text-xs leading-6 text-slate-700 dark:bg-slate-900/30 dark:text-slate-300">
+                      <p className="mb-1 text-sm font-bold">{t('admin.workerTable.ocrRawText', { defaultValue: 'النص الخام الذي قرأه OCR' })}</p>
+                      <pre className="whitespace-pre-wrap break-words font-mono text-[11px]">{selectedWorker.subscriptionOcrRawText}</pre>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Worker approve/reject */}
               <div className="flex flex-wrap gap-2 pt-2">
-                <Button className="flex-1" loading={actioning === `worker-${selectedWorker.id}-approve`} onClick={() => handleWorkerAction(selectedWorker.id, 'approve')}>
+                <Button className="flex-1" disabled={!canApproveWorker} loading={actioning === `worker-${selectedWorker.id}-approve`} onClick={() => handleWorkerAction(selectedWorker.id, 'approve')}>
                   <CheckCircle2 size={16} />
                   {t('admin.approve')}
                 </Button>
@@ -1062,6 +1350,13 @@ export default function AdminDashboard() {
                   </Button>
                 )}
               </div>
+
+              {!canApproveWorker && !paymentOcrVerified && (
+                <p className="text-xs text-rose-600 dark:text-rose-400">
+                  لم يتم التحقق من دفع الاشتراك تلقائياً بعد — يرجى انتظار تحليل الوصل.
+                </p>
+              )}
+
             </div>
           </div>
         )}
@@ -1174,7 +1469,6 @@ export default function AdminDashboard() {
               {PROFESSIONS.map(p => <option key={p.id} value={p.id}>{t(p.labelKey)}</option>)}
             </Select>
             <Input label={t('worker.address')} value={workerForm.address} onChange={setFormValue('address')} required />
-            <Input label={t('worker.dailySalary')} type="number" value={workerForm.salary} onChange={setFormValue('salary')} required />
             <Input label={t('worker.nationalId')} value={workerForm.nationalIdNumber} onChange={setFormValue('nationalIdNumber')} required />
           </div>
 
@@ -1194,6 +1488,80 @@ export default function AdminDashboard() {
           <div className="rounded-2xl border border-primary-100 bg-primary-50/70 p-4 text-sm leading-7 text-primary-800 dark:border-primary-900/40 dark:bg-primary-900/10 dark:text-primary-200">
             {t('worker.identityInfo')}
           </div>
+
+          {workerFormMode === 'create' && (
+            <div className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm dark:border-emerald-900/30 dark:bg-gray-950/40">
+              <div className="mb-4 flex items-center gap-2">
+                <CreditCard size={18} className="text-primary-500" />
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {t('workerDashboard.subscription.title', { defaultValue: 'اشتراك المنصة' })}
+                </h2>
+              </div>
+              <p className="mb-4 text-sm leading-7 text-gray-600 dark:text-gray-300">
+                {t('admin.subscriptionCreateHint', { defaultValue: 'عند إضافة عامل جديد من لوحة الإدارة، أكمل بيانات الاشتراك ووصله هنا ليصبح ملف العامل جاهزًا.' })}
+              </p>
+
+              <div className="grid gap-4 lg:grid-cols-[0.8fr,1.2fr]">
+                <div className="flex flex-col items-center rounded-3xl border border-emerald-100 bg-emerald-50/40 p-5 text-center dark:border-emerald-900/30 dark:bg-emerald-900/10">
+                  <img
+                    src="/payment-qr.svg"
+                    alt="Payment QR"
+                    className="mb-4 h-40 w-40 rounded-3xl border border-emerald-200 bg-white p-3 object-contain"
+                  />
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {t('workerDashboard.subscription.qrTitle', { defaultValue: 'الدفع عبر QR أو رقم الحساب' })}
+                  </p>
+                  <p className="mt-2 text-xs leading-6 text-gray-500 dark:text-gray-400">
+                    {t('admin.subscriptionQrHint', { defaultValue: 'يمكن الدفع عبر QR أو عبر رقم الحساب، ثم أضف رقم العملية وارفع الوصل حتى يُنشأ العامل باشتراكه.' })}
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 p-4">
+                      <div className="text-xs text-gray-500 mb-1">{t('workerDashboard.subscription.amount', { defaultValue: 'قيمة الاشتراك' })}</div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-white">200 MRU</div>
+                    </div>
+                    <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 p-4">
+                      <div className="text-xs text-gray-500 mb-1">{t('workerDashboard.subscription.recipient', { defaultValue: 'اسم المستفيد' })}</div>
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">neina med vall</div>
+                    </div>
+                    <div className="rounded-2xl bg-gray-50 dark:bg-gray-800/60 p-4">
+                      <div className="text-xs text-gray-500 mb-1">{t('workerDashboard.subscription.account', { defaultValue: 'رقم الحساب' })}</div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-white">48995086</div>
+                    </div>
+                  </div>
+
+                  <Input
+                    label={t('workerDashboard.subscription.reference', { defaultValue: 'رقم العملية أو المرجع' })}
+                    value={workerSubscriptionReference}
+                    onChange={(event) => setWorkerSubscriptionReference(event.target.value)}
+                    placeholder={t('workerDashboard.subscription.referencePlaceholder', { defaultValue: 'أدخل رقم العملية بعد الدفع' })}
+                    required
+                  />
+
+                  <label className="block cursor-pointer rounded-2xl border border-dashed border-gray-300 bg-gray-50/80 p-4 transition-colors hover:border-primary-400 hover:bg-primary-50/60 dark:border-gray-700 dark:bg-gray-900/40 dark:hover:border-primary-500 dark:hover:bg-primary-900/10">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-200">
+                      <Receipt size={16} />
+                      {t('workerDashboard.subscription.receipt', { defaultValue: 'وصل الدفع' })}
+                    </div>
+                    <p className="mb-3 text-xs leading-6 text-gray-500 dark:text-gray-400">
+                      {t('workerDashboard.subscription.receiptHint', { defaultValue: 'ارفع صورة أو PDF لوصل الدفع سواء تم عبر QR أو عبر رقم الحساب.' })}
+                    </p>
+                    <div className="rounded-xl bg-white px-3 py-2 text-sm text-gray-600 dark:bg-gray-950/60 dark:text-gray-300">
+                      {workerSubscriptionReceipt?.name || t('workerDashboard.subscription.receiptSelect', { defaultValue: 'اختر ملف الوصل' })}
+                    </div>
+                    <input
+                      type="file"
+                      accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf"
+                      className="hidden"
+                      onChange={(event) => setWorkerSubscriptionReceipt(event.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <FileUploadField
@@ -1363,6 +1731,18 @@ export default function AdminDashboard() {
               <Button type="button" variant="secondary" className="flex-1" onClick={() => setAdminProfileOpen(false)}>{t('common.cancel')}</Button>
               <Button type="submit" loading={adminProfileSaving} className="flex-[2]">{t('common.save')}</Button>
             </div>
+
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800 mt-2">
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={adminProfileSaving}
+                className="w-full py-2.5 rounded-xl text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium flex items-center justify-center gap-2"
+              >
+                <Trash2 size={14} />
+                {t('profile.deleteAccount')}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>
@@ -1390,13 +1770,61 @@ export default function AdminDashboard() {
           <Button type="submit" loading={promotingAdmin} disabled={adminCandidates.length === 0} className="w-full">{t('admin.addAdmin')}</Button>
         </form>
       </Modal>
-      <Modal open={identityPreviewOpen} onClose={() => setIdentityPreviewOpen(false)} title={t('admin.workerTable.viewIdentity')} size="lg">
+      <Modal open={identityPreviewOpen} onClose={() => setIdentityPreviewOpen(false)} title={previewTitle || t('common.view')} size="lg">
         <div className="flex flex-col items-center gap-4">
           {identityPreviewUrl && (
-            <img src={identityPreviewUrl} alt="Identity Document" className="w-full rounded-2xl border border-gray-100 shadow-sm dark:border-gray-800" />
+            <img src={identityPreviewUrl} alt="Document Preview" className="w-full max-h-[70vh] object-contain rounded-2xl border border-gray-100 shadow-sm dark:border-gray-800" />
           )}
           <Button variant="secondary" onClick={() => setIdentityPreviewOpen(false)}>{t('common.close')}</Button>
         </div>
+      </Modal>
+
+      {/* Edit Booking Modal */}
+      <Modal open={!!editingBooking} onClose={() => setEditingBooking(null)} title={t('common.edit')}>
+        {editingBooking && (
+          <form onSubmit={handleUpdateBooking} className="flex flex-col gap-4">
+            {editBookingError && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs">
+                {editBookingError}
+              </div>
+            )}
+            <Input
+              label={t('bookings.form.date')}
+              type="datetime-local"
+              value={editBookingForm.date}
+              min={new Date().toISOString().slice(0, 16)}
+              onChange={e => setEditBookingForm(f => ({ ...f, date: e.target.value }))}
+              required
+            />
+            <Input
+              label={t('tasks.form.location')}
+              value={editBookingForm.address}
+              onChange={e => setEditBookingForm(f => ({ ...f, address: e.target.value }))}
+              required
+            />
+            <Input
+              label={t('bookings.form.locationDetails')}
+              value={editBookingForm.locationDetails}
+              onChange={e => setEditBookingForm(f => ({ ...f, locationDetails: e.target.value }))}
+            />
+            <Textarea
+              label={t('bookings.form.description')}
+              value={editBookingForm.description}
+              onChange={e => setEditBookingForm(f => ({ ...f, description: e.target.value }))}
+              required
+            />
+            <Input
+              label={t('auth.login.phone')}
+              value={editBookingForm.clientPhone}
+              onChange={e => setEditBookingForm(f => ({ ...f, clientPhone: e.target.value }))}
+              required
+            />
+            <div className="flex gap-2 mt-2">
+              <Button type="button" variant="secondary" onClick={() => setEditingBooking(null)} className="flex-1">{t('common.cancel')}</Button>
+              <Button type="submit" loading={editBookingSubmitting} className="flex-1">{t('common.save')}</Button>
+            </div>
+          </form>
+        )}
       </Modal>
 
     </Layout>

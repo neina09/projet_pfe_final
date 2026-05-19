@@ -1,11 +1,14 @@
 package com.backend.Projet.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class BookingRequestDto {
 
     @NotNull(message = "Worker ID is required")
@@ -23,6 +26,9 @@ public class BookingRequestDto {
     @Future(message = "Booking date must be in the future")
     private LocalDateTime bookingDate;
 
-    @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
-    private Double price;
+    @JsonProperty("clientPhone")
+    private String clientPhone;
+
+    @JsonProperty("locationDetails")
+    private String locationDetails;
 }

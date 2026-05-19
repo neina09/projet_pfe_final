@@ -22,7 +22,14 @@ public class BookingResponseDto {
     private String description;
     private String address;
     private LocalDateTime bookingDate;
-    private Double price;
+    @JsonProperty("clientPhone")
+    private String clientPhone;
+
+    @JsonProperty("workerPhone")
+    private String workerPhone;
+
+    @JsonProperty("locationDetails")
+    private String locationDetails;
     @JsonProperty("isRated")
     private boolean isRated;
     private LocalDateTime createdAt;

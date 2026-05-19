@@ -68,6 +68,29 @@ From the backend folder:
 .\mvnw.cmd spring-boot:run
 ```
 
+## OCR Requirement
+
+Payment receipt OCR needs Tesseract installed and available in `PATH`.
+
+For Docker deployments, the provided `backend/Dockerfile` now installs:
+
+- `tesseract-ocr`
+- `tesseract-ocr-ara`
+- `tesseract-ocr-eng`
+- `tesseract-ocr-fra`
+
+For local Windows development, install Tesseract and either:
+
+```powershell
+$env:APP_WORKER_SUBSCRIPTION_OCR_TESSERACT_COMMAND="tesseract"
+```
+
+or point directly to the executable if it is not in `PATH`:
+
+```powershell
+$env:APP_WORKER_SUBSCRIPTION_OCR_TESSERACT_COMMAND="C:\Program Files\Tesseract-OCR\tesseract.exe"
+```
+
 The wrapper now prefers a locally cached Maven distribution from `%USERPROFILE%\.m2\wrapper\dists`, which makes Windows startup more reliable when Maven was already downloaded before.
 
 If Maven Wrapper is not available on your machine, run it from IntelliJ or install Maven and use:

@@ -2,12 +2,78 @@ import { useEffect, useRef, useState } from 'react'
 import { Bell, CheckCheck, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import { notificationsApi } from '../../api/notifications'
 import { useAuth } from '../../context/AuthContext'
+
+// Determine navigation destination based on notification content
+// Returns { path, state } so we can open the correct dashboard tab
+function getNotificationDestination(notification) {
+  const msg = notification?.message || notification?.content || ''
+
+  // ── BOOKING notifications ─────────────────────────────────────────────────
+  // These go to /dashboard and open the "bookings" tab
+  if (
+    notification?.type === 'BOOKING' ||
+    msg.startsWith('Your booking is confirmed for:') ||
+    msg.startsWith('Your booking with') ||
+    msg.startsWith('You have a new booking request for:') ||
+    msg.startsWith('You have a new booking request from') ||
+    msg.startsWith('Booking cancelled:')
+  ) {
+    // If there is a direct booking ID, scroll to it via hash
+    const bookingId = notification?.bookingId || notification?.relatedId
+    return {
+      path: '/dashboard',
+      state: { tab: 'bookings', highlightId: bookingId ?? null }
+    }
+  }
+
+  // Worker dashboard: booking requests come to the "bookings" tab as well
+  // (same message patterns for workers)
+
+  // ── TASK notifications ────────────────────────────────────────────────────
+  // If we have a task ID, go directly to the task detail page
+  const taskId = notification?.taskId
+    || (notification?.relatedId && notification?.type === 'TASK' ? notification.relatedId : null)
+
+  if (
+    taskId ||
+    msg.startsWith('You have been selected for the task:') ||
+    msg.startsWith('A new offer has been submitted for your task:') ||
+    msg.includes('Your offer for the task') ||
+    msg.startsWith('The task') ||
+    msg.startsWith('Your task has been approved') ||
+    msg.startsWith('New task pending review:') ||
+    (msg.startsWith('Worker') && msg.includes('has accepted to start working on:')) ||
+    (msg.startsWith('Worker') && msg.includes('has refused the task:')) ||
+    msg.startsWith('Your task has been rejected:') ||
+    msg.startsWith('Task cancelled:')
+  ) {
+    if (taskId) return { path: `/tasks/${taskId}`, state: {} }
+    // No ID — open dashboard tasks tab
+    return { path: '/dashboard', state: { tab: 'tasks' } }
+  }
+
+  // ── ADMIN / WORKER VERIFICATION notifications ─────────────────────────────
+  if (
+    msg.includes('Your worker account has been verified') ||
+    msg.startsWith('New worker registration pending approval:') ||
+    msg.startsWith('Worker submitted identity document for review:') ||
+    (msg.includes('has been approved') && msg.startsWith('Worker')) ||
+    (msg.includes('has been rejected') && msg.startsWith('Worker'))
+  ) {
+    return { path: '/admin', state: {} }
+  }
+
+  // Default: dashboard
+  return { path: '/dashboard', state: {} }
+}
 
 export default function NotificationDropdown() {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unread, setUnread] = useState(0)
@@ -69,6 +135,17 @@ export default function NotificationDropdown() {
     } catch {}
   }
 
+  const handleNotificationClick = async (notification) => {
+    // Mark as read if not already
+    if (!(notification.read ?? notification.isRead) && notification.id) {
+      await handleMarkAsRead(notification.id)
+    }
+    // Navigate to the relevant page / tab
+    const { path, state } = getNotificationDestination(notification)
+    setOpen(false)
+    navigate(path, { state })
+  }
+
   const handleMarkAllAsRead = async () => {
     setBusy(true)
     try {
@@ -99,14 +176,19 @@ export default function NotificationDropdown() {
 
   const translateMessage = (msg) => {
     if (!msg) return ''
-    
-    // Pattern matching for backend English messages
+
+    // ── TASK patterns ─────────────────────────────────────────────────────────
     if (msg.startsWith('You have been selected for the task:')) {
       const taskName = msg.replace('You have been selected for the task:', '').trim()
       return t('notifications.patterns.selected', { taskName })
     }
+    // Backend may send both forms:
     if (msg.startsWith('A new offer has been submitted for your task:')) {
       const taskName = msg.replace('A new offer has been submitted for your task:', '').trim()
+      return t('notifications.patterns.newOffer', { taskName })
+    }
+    if (msg.startsWith('You have a new offer on your task:')) {
+      const taskName = msg.replace('You have a new offer on your task:', '').trim()
       return t('notifications.patterns.newOffer', { taskName })
     }
     if (msg.includes('Your offer for the task') && msg.includes('has been accepted')) {
@@ -121,31 +203,134 @@ export default function NotificationDropdown() {
       const taskName = msg.replace('The task', '').replace('is completed', '').trim()
       return t('notifications.patterns.taskCompleted', { taskName })
     }
+    if (msg.startsWith('Your task has been approved and is now visible on the platform:')) {
+      const taskName = msg.replace('Your task has been approved and is now visible on the platform:', '').trim()
+      return t('notifications.patterns.taskApproved', { taskName })
+    }
+    if (msg.startsWith('New task pending review:')) {
+      const taskName = msg.replace('New task pending review:', '').trim()
+      return t('notifications.patterns.newTaskPending', { taskName })
+    }
+    if (msg.startsWith('Your task has been rejected:')) {
+      const taskName = msg.replace('Your task has been rejected:', '').trim()
+      return t('notifications.patterns.taskRejected', { taskName })
+    }
+    if (msg.startsWith('Task cancelled:')) {
+      const taskName = msg.replace('Task cancelled:', '').trim()
+      return t('notifications.patterns.taskCancelled', { taskName })
+    }
+
+    // ── BOOKING patterns ──────────────────────────────────────────────────────
     if (msg.startsWith('Your booking is confirmed for:')) {
       const date = msg.replace('Your booking is confirmed for:', '').trim()
       return t('notifications.patterns.bookingConfirmed', { date })
+    }
+    // "has been accepted" variant
+    if (msg.startsWith('Your booking with') && msg.includes('has been accepted')) {
+      const name = msg.replace('Your booking with', '').replace('has been accepted', '').trim()
+      return t('notifications.patterns.bookingAccepted', { name })
+    }
+    // "was accepted" variant
+    if (msg.startsWith('Your booking with') && msg.includes('was accepted')) {
+      const name = msg.replace('Your booking with', '').replace('was accepted', '').trim()
+      return t('notifications.patterns.bookingAccepted', { name })
+    }
+    // "has been rejected" variant
+    if (msg.startsWith('Your booking with') && msg.includes('has been rejected')) {
+      const name = msg.replace('Your booking with', '').replace('has been rejected', '').trim()
+      return t('notifications.patterns.bookingRejected', { name })
+    }
+    // "was rejected" variant
+    if (msg.startsWith('Your booking with') && msg.includes('was rejected') && !msg.includes('due to conflict')) {
+      const name = msg.replace('Your booking with', '').replace('was rejected', '').trim()
+      return t('notifications.patterns.bookingRejected', { name })
+    }
+    // "automatically rejected due to conflict" variant
+    if (msg.startsWith('Your booking with') && msg.includes('was automatically rejected due to conflict')) {
+      const name = msg.replace('Your booking with', '').replace('was automatically rejected due to conflict', '').trim()
+      return t('notifications.patterns.autoBookingRejected', { name })
+    }
+    // "has been completed" variant
+    if (msg.startsWith('Your booking with') && msg.includes('has been completed')) {
+      const name = msg.replace('Your booking with', '').replace('has been completed', '').trim()
+      return t('notifications.patterns.bookingCompleted', { name })
+    }
+    // "was completed" variant
+    if (msg.startsWith('Your booking with') && msg.includes('was completed')) {
+      const name = msg.replace('Your booking with', '').replace('was completed', '').trim()
+      return t('notifications.patterns.bookingCompleted', { name })
     }
     if (msg.startsWith('You have a new booking request for:')) {
       const date = msg.replace('You have a new booking request for:', '').trim()
       return t('notifications.patterns.newBooking', { date })
     }
+    // "from X" or "from X:" variants
+    if (msg.startsWith('You have a new booking request from')) {
+      const name = msg.replace('You have a new booking request from', '').replace(/^[:\s]+/, '').trim()
+      return t('notifications.patterns.newBookingFrom', { name })
+    }
+    if (msg.startsWith('Booking cancelled:')) {
+      const date = msg.replace('Booking cancelled:', '').trim()
+      return t('notifications.patterns.bookingCancelled', { date })
+    }
+
+    if (msg.endsWith('cancelled the booking request')) {
+      const name = msg.replace('cancelled the booking request', '').trim()
+      return t('notifications.patterns.bookingCancelledByUser', { name })
+    }
+
+    // ── WORKER / ADMIN patterns ────────────────────────────────────────────────
+    if (msg.startsWith('Worker subscription payment submitted for review:')) {
+      const workerName = msg.replace('Worker subscription payment submitted for review:', '').trim()
+      return t('notifications.patterns.subscriptionSubmitted', { workerName })
+    }
+    if (msg.includes('Your subscription payment has been verified by the admin.')) {
+      return t('notifications.patterns.subscriptionVerified')
+    }
+    if (msg.includes('Your subscription payment was rejected. Please upload a valid receipt and reference.')) {
+      return t('notifications.patterns.subscriptionRejected')
+    }
+    if (msg.includes('Your task was rejected by the admin. Please update it and submit it again.')) {
+      return t('notifications.patterns.taskRejectedAdmin')
+    }
+    if (msg.startsWith('Worker') && msg.includes('asked you to review task:')) {
+      const parts = msg.replace('Worker', '').split('asked you to review task:')
+      const workerName = parts[0].trim()
+      const rest = parts[1] || ''
+      const subParts = rest.split('. Message:')
+      const taskName = (subParts[0] || '').trim()
+      const referralMessage = (subParts[1] || '').trim()
+      return t('notifications.patterns.assistanceRequested', { workerName, taskName, message: referralMessage })
+    }
+    if (msg.startsWith('Worker') && msg.includes('requested help from') && msg.includes('on task:')) {
+      const parts = msg.replace('Worker', '').split('requested help from')
+      const workerName = parts[0].trim()
+      const rest = parts[1] || ''
+      const subParts = rest.split('on task:')
+      const requestedName = (subParts[0] || '').trim()
+      const taskName = (subParts[1] || '').trim()
+      return t('notifications.patterns.assistanceReferral', { workerName, requestedName, taskName })
+    }
+    if (msg.startsWith('New worker profile pending review:')) {
+      const workerName = msg.replace('New worker profile pending review:', '').trim()
+      return t('notifications.patterns.workerPendingApproval', { workerName })
+    }
     if (msg.includes('Your worker account has been verified')) {
       return t('notifications.patterns.workerVerified')
     }
-    if (msg.startsWith('Your task has been approved and is now visible on the platform:')) {
-      const taskName = msg.replace('Your task has been approved and is now visible on the platform:', '').trim()
-      return t('notifications.patterns.taskApproved', { taskName })
+    if (msg.includes('Your worker verification was rejected')) {
+      return t('notifications.patterns.workerVerificationRejected')
     }
     if (msg.startsWith('Worker') && msg.includes('has accepted to start working on:')) {
       const parts = msg.replace('Worker', '').split('has accepted to start working on:')
       const workerName = parts[0].trim()
-      const taskName = parts[1].trim()
+      const taskName = (parts[1] || '').trim()
       return t('notifications.patterns.workerAccepted', { workerName, taskName })
     }
     if (msg.startsWith('Worker') && msg.includes('has refused the task:')) {
       const parts = msg.replace('Worker', '').split('has refused the task:')
       const workerName = parts[0].trim()
-      const taskName = parts[1].trim()
+      const taskName = (parts[1] || '').trim()
       return t('notifications.patterns.workerRefused', { workerName, taskName })
     }
     if (msg.startsWith('Worker submitted identity document for review:')) {
@@ -164,19 +349,8 @@ export default function NotificationDropdown() {
       const workerName = msg.replace('Worker', '').replace('has been rejected', '').trim()
       return t('notifications.patterns.workerRejected', { workerName })
     }
-    if (msg.startsWith('Your task has been rejected:')) {
-      const taskName = msg.replace('Your task has been rejected:', '').trim()
-      return t('notifications.patterns.taskRejected', { taskName })
-    }
-    if (msg.startsWith('Task cancelled:')) {
-      const taskName = msg.replace('Task cancelled:', '').trim()
-      return t('notifications.patterns.taskCancelled', { taskName })
-    }
-    if (msg.startsWith('Booking cancelled:')) {
-      const date = msg.replace('Booking cancelled:', '').trim()
-      return t('notifications.patterns.bookingCancelled', { date })
-    }
 
+    // Fallback: return original message
     return msg
   }
 
@@ -241,27 +415,37 @@ export default function NotificationDropdown() {
                 <p className="p-6 text-center text-sm text-gray-400">{t('notifications.empty')}</p>
               ) : (
                 notifications.map((n, i) => (
-                  <div key={n.id || i} className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${!(n.read ?? n.isRead) ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''}`}>
+                  <div
+                    key={n.id || i}
+                    className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${!(n.read ?? n.isRead) ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''}`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <button
                         type="button"
-                        className="flex-1 text-start"
-                        onClick={() => !(n.read ?? n.isRead) && n.id && handleMarkAsRead(n.id)}
+                        className="flex-1 text-start cursor-pointer group"
+                        onClick={() => handleNotificationClick(n)}
                       >
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          {translateMessage(n.message || n.content)}
-                        </p>
-                        {n.createdAt && (
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {new Date(n.createdAt).toLocaleString()}
-                          </p>
-                        )}
+                        <div className="flex items-start gap-2">
+                          {!(n.read ?? n.isRead) && (
+                            <span className="mt-1.5 w-2 h-2 rounded-full bg-primary-500 shrink-0" />
+                          )}
+                          <div className={!(n.read ?? n.isRead) ? '' : 'ml-4'}>
+                            <p className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                              {translateMessage(n.message || n.content)}
+                            </p>
+                            {n.createdAt && (
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {new Date(n.createdAt).toLocaleString(i18n.language)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </button>
                       {n.id && (
                         <button
                           type="button"
-                          onClick={() => handleDeleteNotification(n.id)}
-                          className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-500 dark:hover:bg-gray-800"
+                          onClick={(e) => { e.stopPropagation(); handleDeleteNotification(n.id) }}
+                          className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-500 dark:hover:bg-gray-800 shrink-0"
                           title={t('common.delete')}
                         >
                           <Trash2 size={14} />

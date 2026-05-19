@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { MapPin, Clock, Briefcase, ArrowLeft, CheckCircle2, User, Lock, MessageSquare, Send, XCircle, Star } from 'lucide-react'
@@ -14,7 +14,7 @@ import Modal from '../../components/ui/Modal'
 import { Textarea } from '../../components/ui/Input'
 import { PageLoader } from '../../components/ui/Spinner'
 import StarRating from '../../components/ui/StarRating'
-import { normalizeTask } from '../../lib/normalizers'
+import { normalizeTask, normalizeOffer } from '../../lib/normalizers'
 
 const statusVariant = { PENDING: 'yellow', OPEN: 'blue', IN_PROGRESS: 'primary', COMPLETED: 'green', CANCELLED: 'red', PENDING_REVIEW: 'yellow' }
 
@@ -28,7 +28,8 @@ function formatOfferStatus(status, t) {
 }
 
 export default function TaskDetail() {
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
+  const isRtl = i18n.language === 'ar'
   const { id } = useParams()
   const navigate = useNavigate()
   const { user, isWorker } = useAuth()
@@ -48,8 +49,8 @@ export default function TaskDetail() {
   const [offerSuccess, setOfferSuccess] = useState('')
   const [actionError, setActionError] = useState('')
 
-  const load = async () => {
-    setLoading(true)
+  const load = async (showLoader = true) => {
+    if (showLoader) setLoading(true)
     try {
       const taskRes = await tasksApi.getById(id)
       const normalizedTask = normalizeTask(taskRes.data)
@@ -61,15 +62,23 @@ export default function TaskDetail() {
         if (isTaskOwner || user.role === 'ADMIN') {
           try {
             const offersRes = await tasksApi.getOffers(id)
-            setOffers(offersRes.data || [])
+            setOffers((offersRes.data || []).map(normalizeOffer))
           } catch {
             setOffers([])
           }
         } else if (isWorker) {
           try {
             const myOffersRes = await tasksApi.getMyOffers()
-            const myOfferForThisTask = (myOffersRes.data || []).find(o => String(o.taskId || o.task?.id) === String(id))
-            setOffers(myOfferForThisTask ? [myOfferForThisTask] : [])
+            const myOfferForThisTask = (myOffersRes.data || []).find(o => {
+              const offerTaskId = o.taskId || o.task?.id || o.task_id || o.taskId
+              return String(offerTaskId) === String(id)
+            })
+            
+            // Also check if taskRes.data itself contains our offer (some backends do this)
+            const offerInTask = taskRes.data.myOffer || taskRes.data.offer || taskRes.data.currentUserOffer
+            
+            const finalOffer = myOfferForThisTask || (offerInTask ? normalizeOffer(offerInTask) : null)
+            setOffers(finalOffer ? [normalizeOffer(finalOffer)] : [])
           } catch {
             setOffers([])
           }
@@ -94,6 +103,13 @@ export default function TaskDetail() {
     [offers]
   )
 
+  const visibleOffers = useMemo(() => {
+    return offers.filter(offer => 
+      offer.workerAvailable || 
+      ['ACCEPTED', 'SELECTED', 'IN_PROGRESS', 'COMPLETED'].includes(offer.status)
+    )
+  }, [offers])
+
   const canCancelTask = Boolean(isOwner && ['OPEN', 'PENDING', 'PENDING_REVIEW'].includes(task?.status))
   const canDeleteTask = Boolean(isOwner && (task?.status === 'COMPLETED' || task?.status === 'CANCELLED' || task?.status === 'REJECTED'))
   const canSubmitOffer = Boolean(user && isWorker && (task?.status === 'OPEN' || task?.status === 'PENDING') && !currentWorkerOffer)
@@ -113,21 +129,33 @@ export default function TaskDetail() {
   const handleSubmitOffer = async (e) => {
     e.preventDefault()
     if (!user) return navigate('/login')
+    if (currentWorkerOffer) {
+      setOfferError(t('tasks.offers.offerSubmitted'))
+      return
+    }
 
     try {
       setSubmitting(true)
       await tasksApi.submitOffer(id, offerForm)
       setSubmitting(false)
       setOfferForm({ message: '' })
-      alert(t('tasks.offers.success'))
-      window.location.reload()
+      setOfferSuccess(t('tasks.offers.success'))
+      setOfferOpen(false)
+      load(false)
     } catch (err) {
       setSubmitting(false)
       const errorMsg = err.response?.data?.message || ''
-      if (errorMsg.includes('AVAILABLE') || errorMsg.includes('مشغول') || errorMsg.includes('busy')) {
-        alert(t('errors.workerBusy'))
+      if (errorMsg.includes('already submitted') || errorMsg.includes('submitted an offer')) {
+        setOfferError(t('tasks.offers.offerSubmitted'))
+        // If we found out they already submitted, let's refresh to hide the modal and button
+        setTimeout(() => {
+          setOfferOpen(false)
+          load(false)
+        }, 2000)
+      } else if (errorMsg.includes('AVAILABLE') || errorMsg.includes('مشغول') || errorMsg.includes('busy')) {
+        setOfferError(t('errors.workerBusy'))
       } else {
-        alert(errorMsg || t('common.error'))
+        setOfferError(errorMsg || t('common.error'))
       }
     }
   }
@@ -137,9 +165,14 @@ export default function TaskDetail() {
     setSubmitting(true)
     try {
       await tasksApi.acceptOffer(id, offerId)
-      load()
+      load(false)
     } catch (err) {
-      setActionError(err.response?.data?.message || err.message || t('errors.serverError'))
+      const msg = err.response?.data?.message || err.message || ''
+      if (msg.toLowerCase().includes('busy')) {
+        setActionError(t('errors.workerCurrentlyBusy'))
+      } else {
+        setActionError(msg || t('errors.serverError'))
+      }
     }
     setSubmitting(false)
   }
@@ -149,7 +182,7 @@ export default function TaskDetail() {
     setSubmitting(true)
     try {
       await tasksApi.rejectOffer(id, offerId)
-      load()
+      load(false)
     } catch (err) {
       setActionError(err.response?.data?.message || err.message || t('errors.serverError'))
     }
@@ -165,7 +198,7 @@ export default function TaskDetail() {
         navigate('/dashboard', { state: { tab: 'active', filter: 'IN_PROGRESS' } })
       } else {
         await tasksApi.workerRefuse(offerId)
-        load()
+        load(false)
       }
     } catch (err) {
       setActionError(err.response?.data?.message || err.message || t('errors.serverError'))
@@ -261,14 +294,14 @@ export default function TaskDetail() {
 
   return (
     <Layout>
-      <div className="page-container py-10 max-w-4xl">
+      <div className="page-container py-10 max-w-4xl" dir={isRtl ? 'rtl' : 'ltr'}>
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 mb-6 transition-colors">
           <ArrowLeft size={16} className="rtl-flip" /> {t('common.back')}
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-2 flex flex-col gap-5">
-            <div className="card p-6">
+            <div className={`card p-6 ${isRtl ? 'text-right' : 'text-left'}`}>
               <div className="flex items-start justify-between gap-3 mb-4">
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">{task.title}</h1>
                 <Badge variant={statusVariant[task.status] || 'gray'}>
@@ -277,11 +310,18 @@ export default function TaskDetail() {
               </div>
 
               {task.description && (
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">{task.description}</p>
+                <p className={`text-gray-600 dark:text-gray-400 leading-relaxed text-sm whitespace-pre-wrap ${isRtl ? 'text-right' : 'text-left'}`}>
+                  {task.description}
+                </p>
               )}
 
               <div className="flex flex-wrap gap-4 mt-5 text-sm text-gray-500 dark:text-gray-400">
-                {task.profession && <span className="flex items-center gap-1.5"><Briefcase size={14} />{task.profession}</span>}
+                {task.profession && (
+                  <span className="flex items-center gap-1.5">
+                    <Briefcase size={14} />
+                    {t(`home.categories.${task.profession.toLowerCase()}`) || task.profession}
+                  </span>
+                )}
                 {task.address && <span className="flex items-center gap-1.5"><MapPin size={14} />{task.address}</span>}
                 {task.createdAt && <span className="flex items-center gap-1.5"><Clock size={14} />{new Date(task.createdAt).toLocaleDateString()}</span>}
               </div>
@@ -295,26 +335,40 @@ export default function TaskDetail() {
 
             <div className="card p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-gray-900 dark:text-white">
-                  {t('tasks.offers.title')} ({task.offersCount || offers.length})
-                </h2>
+                {(isOwner || isWorker || visibleOffers.length > 0) ? (
+                  <h2 className="font-semibold text-gray-900 dark:text-white">
+                    {t('tasks.offers.title')} ({visibleOffers.length})
+                  </h2>
+                ) : (
+                  <div /> // Placeholder to keep layout if needed, or null
+                )}
                 {canSubmitOffer ? (
                   <Button size="sm" onClick={() => setOfferOpen(true)}>
                     {t('tasks.offers.submit')}
                   </Button>
-                ) : (
-                  user && isWorker && currentWorkerOffer && (
-                    <Badge variant="green" className="py-1.5 px-3">
-                      {t('tasks.offers.offerSubmitted')}
-                    </Badge>
-                  )
-                )}
+                ) : user && isWorker && currentWorkerOffer ? (
+                  <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold bg-primary-50 dark:bg-primary-900/20 px-4 py-2 rounded-xl border border-primary-100 dark:border-primary-900/30">
+                    <CheckCircle2 size={18} />
+                    <span>{t('tasks.offers.offerSubmitted')}</span>
+                  </div>
+                ) : null}
               </div>
+
+              {user && !isWorker && !isOwner && (task?.status === 'OPEN' || task?.status === 'PENDING') && (
+                <div className="mb-6 flex flex-col sm:flex-row items-center gap-4 bg-primary-50/30 dark:bg-primary-900/10 p-6 rounded-2xl border border-dashed border-primary-100 dark:border-primary-900/30">
+                  <div className="flex-1 text-center sm:text-start">
+                    <p className="text-sm font-semibold text-primary-900 dark:text-primary-100">{t('tasks.offers.workerOnlyHint')}</p>
+                  </div>
+                  <Button size="sm" onClick={() => navigate('/become-worker')} className="whitespace-nowrap">
+                    {t('tasks.offers.joinAsWorker')}
+                  </Button>
+                </div>
+              )}
 
               {user && isWorker && currentWorkerOffer && (
                 <div className="mb-4 rounded-2xl border border-primary-100 bg-primary-50/50 p-5 dark:border-primary-900/30 dark:bg-primary-900/10">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-primary-900 dark:text-primary-100">{t('tasks.offers.offerSubmitted')}</h3>
+                    <h3 className="font-bold text-primary-900 dark:text-primary-100">{t('tasks.offerStatus')}</h3>
                     <Badge variant={currentWorkerOffer.status === 'COMPLETED' ? 'green' : 'blue'}>
                       {formatOfferStatus(currentWorkerOffer.status, t)}
                     </Badge>
@@ -349,24 +403,55 @@ export default function TaskDetail() {
                     {t('nav.login')}
                   </Button>
                 </div>
-              ) : offers.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-6">{t('tasks.offers.noOffers')}</p>
+              ) : visibleOffers.length === 0 ? (
+                // Only show "No offers yet" if user is owner or worker (who might want to see their own offer or manage others)
+                // If it's a guest or a non-worker client, they already have a CTA box, so we don't need the empty state text.
+                (isOwner || isWorker) ? (
+                  <p className="text-sm text-gray-400 text-center py-6">{t('tasks.offers.noOffers')}</p>
+                ) : null
               ) : (
-                <div className="flex flex-col gap-3">
-                  {offers.map((offer) => (
-                    <div key={offer.id} className="border border-gray-100 dark:border-gray-800 rounded-xl p-4">
+                <div className="flex flex-col gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                  {visibleOffers.map((offer) => (
+                    <div key={offer.id} className="group border border-gray-100 dark:border-gray-800 hover:border-primary-100 dark:hover:border-primary-900/30 rounded-2xl p-5 transition-all hover:bg-primary-50/20 dark:hover:bg-primary-900/5">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
-                            <User size={14} className="text-primary-600 dark:text-primary-400" />
-                          </div>
+                        <div className="flex items-center gap-3">
+                          <Link 
+                            to={`/workers/${offer.workerId}`}
+                            className="relative flex-shrink-0 group"
+                          >
+                            {offer.workerPhoto ? (
+                              <img
+                                src={offer.workerPhoto}
+                                alt={offer.workerName}
+                                className="w-10 h-10 rounded-full object-cover border-2 border-primary-200 dark:border-primary-800 transition-transform group-hover:scale-105"
+                                onError={(e) => { 
+                                  e.target.style.display = 'none'; 
+                                  if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-sm border-2 border-primary-200 dark:border-primary-800 transition-transform group-hover:scale-105"
+                              style={{ display: offer.workerPhoto ? 'none' : 'flex' }}
+                            >
+                              {(offer.workerName || '?')[0].toUpperCase()}
+                            </div>
+                          </Link>
                           <div>
-                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                              {offer.workerName || offer.worker?.name || 'Worker'}
-                            </p>
+                            <Link 
+                              to={`/workers/${offer.workerId}`}
+                              className="text-sm font-bold text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                            >
+                              {offer.workerName || 'Worker'}
+                            </Link>
                             <p className="text-xs text-primary-600 dark:text-primary-400 font-semibold">
                               {formatOfferStatus(offer.status, t)}
                             </p>
+                            {!offer.workerAvailable && (
+                              <Badge variant="red" className="text-[10px] py-0 px-1 mt-1">
+                                {t('workers.card.busy')}
+                              </Badge>
+                            )}
                           </div>
                         </div>
 
@@ -377,7 +462,9 @@ export default function TaskDetail() {
                                 size="sm"
                                 onClick={() => handleAcceptOffer(offer.id)}
                                 loading={submitting}
+                                disabled={submitting || !offer.workerAvailable}
                                 className="text-xs py-1.5 px-3"
+                                title={!offer.workerAvailable ? t('errors.workerCurrentlyBusy') : ''}
                               >
                                 <CheckCircle2 size={13} /> {t('tasks.offers.accept')}
                               </Button>
@@ -424,7 +511,9 @@ export default function TaskDetail() {
                       </div>
 
                       {offer.message && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 ms-10">{offer.message}</p>
+                        <div className="mt-3 ms-12 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100/50 dark:border-gray-700/30">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 italic">"{offer.message}"</p>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -434,17 +523,20 @@ export default function TaskDetail() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="lg:col-span-1">
+            <div className="sticky top-24 space-y-4">
             <div className="card p-5 mb-4">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('common.info')}</h3>
               <div className="flex flex-col gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex justify-between">
                   <span>{t('tasks.offers.title')}</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{task.offersCount || offers.length}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{visibleOffers.length}</span>
                 </div>
                 {task.profession && (
                   <div className="flex justify-between">
                     <span>{t('common.profession')}</span>
-                    <span className="font-semibold text-primary-600 dark:text-primary-400">{task.profession}</span>
+                    <span className="font-semibold text-primary-600 dark:text-primary-400">
+                      {t(`home.categories.${task.profession.toLowerCase()}`) || task.profession}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -456,9 +548,10 @@ export default function TaskDetail() {
               </div>
             </div>
 
-            <div className="card p-5">
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('tasks.manage')}</h3>
-              <div className="space-y-2">
+            {(canEditTask || canCancelTask || canDeleteTask || (isOwner && task.status === 'IN_PROGRESS') || canRate || currentWorkerOffer || selectedOffer) && (
+              <div className="card p-5">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('tasks.manage')}</h3>
+                <div className="space-y-2">
                 {canEditTask && (
                   <Button variant="secondary" className="w-full" onClick={openEditModal}>
                     {t('tasks.edit')}
@@ -505,6 +598,8 @@ export default function TaskDetail() {
                   </div>
                 )}
               </div>
+            </div>
+            )}
             </div>
           </motion.div>
         </div>

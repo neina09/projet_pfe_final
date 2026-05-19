@@ -9,7 +9,7 @@ import lombok.Setter;
 public class RegisterUserDto {
 
     @NotBlank(message = "Username is required")
-    @Pattern(regexp = "^[\\p{L} ]{1,15}$", message = "Username must contain letters only and be at most 15 characters")
+    @Pattern(regexp = "^[a-zA-Z0-9\\p{L} ]{1,30}$", message = "Name must contain letters/numbers and be at most 30 characters")
     private String username;
 
     @NotBlank(message = "Phone is required")

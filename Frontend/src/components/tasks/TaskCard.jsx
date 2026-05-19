@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { MapPin, Clock, Briefcase, MessageSquare, Pencil, Trash2 } from 'lucide-react'
+import { MapPin, Clock, Briefcase, MessageSquare, Pencil, Trash2, User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import Badge from '../ui/Badge'
 
@@ -72,30 +72,25 @@ export default function TaskCard({ task, index = 0, onEdit, onDelete }) {
       </div>
 
       {task.userName && (
-        <div className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-          {task.userName}
+        <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0 border border-gray-200 dark:border-gray-700">
+            <User size={12} className="text-gray-500 dark:text-gray-400" />
+          </div>
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+            {task.userName}
+          </span>
         </div>
       )}
 
       <div className="mt-auto flex items-center justify-between gap-2">
         <Link
           to={`/tasks/${task.id}`}
-          className="text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium"
+          className="text-sm text-primary-600 dark:text-primary-400 hover:underline font-medium inline-flex items-center gap-1"
         >
-          {t('common.viewMore')} →
+          <span>{t('common.viewMore')}</span>
+          <span className="inline-block rtl-flip">→</span>
         </Link>
 
-        <div className="flex items-center gap-1">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleEdit}
-            title={t('common.edit', 'تعديل')}
-            className="p-1.5 rounded-md text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-          >
-            <Pencil size={15} />
-          </motion.button>
-        </div>
       </div>
     </motion.div>
   )

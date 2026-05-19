@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import Input from '../../components/ui/Input'
 import Button from '../../components/ui/Button'
 import Layout from '../../components/layout/Layout'
+import { validatePhone } from '../../lib/validators'
 
 export default function Login() {
   const { t } = useTranslation()
@@ -23,15 +23,40 @@ export default function Login() {
     }
   }, [currentUser, navigate])
   const [form, setForm] = useState({ phone: '', password: '' })
-  const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [error, setError] = useState('')
+  const [phoneError, setPhoneError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [generalError, setGeneralError] = useState('')
+
+  const validate = () => {
+    let isValid = true
+    setPhoneError('')
+    setPasswordError('')
+    setGeneralError('')
+
+    if (!form.phone.trim()) {
+      setPhoneError('errors.required')
+      isValid = false
+    } else if (!validatePhone(form.phone)) {
+      setPhoneError('errors.invalidMauritanianPhone')
+      isValid = false
+    }
+
+    if (!form.password) {
+      setPasswordError('errors.required')
+      isValid = false
+    }
+
+    return isValid
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
+    if (!validate()) return
+    
     setLoading(true)
+    
     try {
       const user = await login(form.phone, form.password)
       setSuccess(true)
@@ -39,9 +64,21 @@ export default function Login() {
       if (user?.role === 'ADMIN' || user?.roles?.includes('ADMIN')) navigate('/admin')
       else navigate('/dashboard')
     } catch (err) {
-      let msg = err.response?.data?.message || t('errors.serverError')
-      if (msg.includes(': ')) msg = msg.split(': ')[1]
-      setError(msg)
+      const errorMsg = err.response?.data?.message || ''
+      
+      if (errorMsg === 'PHONE_NOT_FOUND') {
+        setPhoneError('errors.phoneNotFound')
+      } else if (errorMsg === 'INCORRECT_PASSWORD') {
+        setPasswordError('errors.incorrectPassword')
+      } else if (errorMsg === 'ACCOUNT_NOT_VERIFIED') {
+        setGeneralError('errors.accountNotVerified')
+      } else if (errorMsg.toLowerCase().includes('mauritanian')) {
+        setPhoneError('errors.invalidMauritanianPhone')
+      } else {
+        let msg = errorMsg || t('errors.serverError')
+        if (msg.includes(': ')) msg = msg.split(': ')[1]
+        setGeneralError(msg)
+      }
       setLoading(false)
     }
   }
@@ -94,7 +131,9 @@ export default function Login() {
         >
           <div className="card p-8">
             <div className="text-center mb-8">
-              <div className="w-14 h-14 bg-primary-500 rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">ع</div>
+              <div className="w-14 h-14 bg-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md overflow-hidden">
+                <img src="/logo.svg" alt="3ommalek" className="w-14 h-14" />
+              </div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('auth.login.title')}</h1>
               <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">{t('auth.login.subtitle')}</p>
             </div>
@@ -106,28 +145,29 @@ export default function Login() {
                   type="tel"
                   placeholder="+222 XX XX XX XX"
                   value={form.phone}
-                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                  onChange={e => {
+                    setForm(f => ({ ...f, phone: e.target.value }))
+                    setPhoneError('')
+                    setGeneralError('')
+                  }}
+                  error={phoneError ? t(phoneError) : ''}
                   required
                 />
               </div>
 
-              <div className="relative">
-                <Input
-                  label={t('auth.login.password')}
-                  type={showPw ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(s => !s)}
-                  className="absolute end-3 top-9 text-gray-400 hover:text-gray-600"
-                >
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
+              <Input
+                label={t('auth.login.password')}
+                type="password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={e => {
+                  setForm(f => ({ ...f, password: e.target.value }))
+                  setPasswordError('')
+                  setGeneralError('')
+                }}
+                error={passwordError ? t(passwordError) : ''}
+                required
+              />
 
               <div className="text-end">
                 <Link to="/forgot-password" className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
@@ -135,13 +175,13 @@ export default function Login() {
                 </Link>
               </div>
 
-              {error && (
+              {generalError && (
                 <motion.div
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm"
                 >
-                  {error}
+                  {generalError.includes('.') ? t(generalError) : generalError}
                 </motion.div>
               )}
 

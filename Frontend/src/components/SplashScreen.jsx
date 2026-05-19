@@ -21,7 +21,7 @@ export default function SplashScreen() {
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             className="w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-3xl shadow-2xl shadow-primary-500/40 flex items-center justify-center"
           >
-            <img src="logo.svg" alt="Ommalak" className="w-24 h-24" />
+            <img src="/logo.svg" alt="3ommalek" className="w-24 h-24" />
           </motion.div>
           {/* Ripple ring */}
           <motion.div
@@ -37,7 +37,7 @@ export default function SplashScreen() {
           transition={{ delay: 0.3, duration: 0.4 }}
           className="text-center"
         >
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Ommalak</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">3ommalek</h1>
           <p className="text-primary-500 text-sm font-medium mt-1">عُمَّالَكْ</p>
         </motion.div>
       </motion.div>

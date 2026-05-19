@@ -83,7 +83,6 @@ class WorkerServiceTest {
         dto.setName("Ahmed");
         dto.setJob("Electrician");
         dto.setAddress("Nouakchott");
-        dto.setSalary(1000);
         dto.setPhoneNumber("+22222123456");
         dto.setNationalIdNumber("MR123456");
 
@@ -148,7 +147,6 @@ class WorkerServiceTest {
                 .name("Ahmed")
                 .job("Electrician")
                 .address("Nouakchott")
-                .salary(1000)
                 .phoneNumber("22123456")
                 .nationalIdNumber("1234567890")
                 .identityDocumentUrl("/uploads/workers/id.pdf")

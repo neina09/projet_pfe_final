@@ -172,6 +172,18 @@ public class WorkerController {
                 .body(resource);
     }
 
+    @GetMapping("/{id}/subscription-receipt")
+    public ResponseEntity<Resource> getSubscriptionReceipt(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User currentUser) {
+        Resource resource = workerService.getSubscriptionReceiptResource(id, currentUser);
+        String contentType = workerService.getSubscriptionReceiptContentType(id, currentUser);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(resource);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteWorker(
             @PathVariable Long id,

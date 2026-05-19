@@ -69,7 +69,7 @@ public class UserController {
         return ResponseEntity.ok(authenticationService.uploadProfileImage(currentUser, file));
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("/me")
     public ResponseEntity<?> deleteAccount(
             @AuthenticationPrincipal User currentUser) {
         authenticationService.deleteAccount(currentUser);

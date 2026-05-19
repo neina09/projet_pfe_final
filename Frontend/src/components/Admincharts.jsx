@@ -67,10 +67,10 @@ export default function AdminCharts({ dashboard }) {
   const chartData = useMemo(() => generateMockData(period, dashboard, t), [period, dashboard, t])
 
   const pieData = useMemo(() => [
-    { name: t('tasks.status.COMPLETED'), value: dashboard?.completedBookings ?? 0 },
-    { name: t('tasks.status.IN_PROGRESS'), value: dashboard?.pendingTasks ?? 0 },
-    { name: t('workerStatusLabel.VERIFIED'), value: dashboard?.verifiedWorkers ?? 0 },
-    { name: t('workerStatusLabel.PENDING'), value: dashboard?.pendingWorkers ?? 0 },
+    { name: t('tasks.status.COMPLETED'), value: dashboard?.completedBookings ?? 0, color: '#10b981' }, // Green
+    { name: t('tasks.status.IN_PROGRESS'), value: dashboard?.pendingTasks ?? 0, color: '#3b82f6' },  // Blue
+    { name: t('workerStatusLabel.VERIFIED'), value: dashboard?.verifiedWorkers ?? 0, color: '#6366f1' }, // Indigo
+    { name: t('workerStatusLabel.PENDING'), value: dashboard?.pendingWorkers ?? 0, color: '#f59e0b' },   // Amber
   ], [dashboard, t])
 
 
@@ -210,35 +210,62 @@ export default function AdminCharts({ dashboard }) {
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
             {t('admin.charts.distribution')}
           </h3>
-          <div className="h-72 flex items-center justify-center">
+          <div className="h-[400px] flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+              <PieChart margin={{ top: 20, right: 100, left: 100, bottom: 20 }}>
                 <Pie
                   data={pieData}
                   cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={3}
+                  cy="45%"
+                  innerRadius={70}
+                  outerRadius={105}
+                  paddingAngle={5}
                   dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
+                  label={({ cx, cy, midAngle, outerRadius, percent, name, color }) => {
+                    const RADIAN = Math.PI / 180;
+                    // Push labels further out, especially for small slices
+                    const extra = percent < 0.1 ? 50 : 35;
+                    const radius = outerRadius + extra;
+                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                    
+                    return (
+                      <text
+                        x={x}
+                        y={y}
+                        fill={color}
+                        className="text-[12px] font-bold"
+                        textAnchor={x > cx ? 'start' : 'end'}
+                        dominantBaseline="central"
+                      >
+                        {`${name} ${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    );
+                  }}
                 >
-                  {pieData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                   ))}
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    background: 'rgba(15,23,42,0.9)',
-                    border: 'none',
-                    borderRadius: '12px',
+                    background: 'rgba(15, 23, 42, 0.95)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '16px',
                     color: '#fff',
-                    fontSize: '12px',
+                    fontSize: '13px',
+                    padding: '10px 16px',
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+                    backdropFilter: 'blur(8px)',
                   }}
+                  itemStyle={{ color: '#fff', fontWeight: 'bold' }}
                 />
                 <Legend
-                  wrapperStyle={{ fontSize: '12px' }}
-                  formatter={(value) => <span className="text-gray-600 dark:text-gray-400">{value}</span>}
+                  verticalAlign="bottom"
+                  height={40}
+                  wrapperStyle={{ fontSize: '12px', paddingTop: '40px' }}
+                  formatter={(value) => <span className="text-gray-600 dark:text-gray-400 font-medium px-2">{value}</span>}
                 />
               </PieChart>
             </ResponsiveContainer>

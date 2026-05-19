@@ -12,6 +12,8 @@ export const adminApi = {
   deleteWorker:          (id)               => api.delete(`/api/workers/admin/${id}`),
   approveWorker:         (id, notes = '')   => api.patch(`/api/workers/admin/${id}/verify`, null, { params: { notes } }),
   rejectWorker:          (id, notes = '')   => api.patch(`/api/workers/admin/${id}/reject`, null, { params: { notes } }),
+  approveSubscription:   (id)               => api.patch(`/api/workers/admin/${id}/subscription/approve`),
+  rejectSubscription:    (id)               => api.patch(`/api/workers/admin/${id}/subscription/reject`),
   getWorkerDetails:      (id)               => api.get(`/api/workers/${id}/manage`),
   approveTask:           (id)               => api.patch(`/api/tasks/${id}/approve`),
   rejectTask:            (id)               => api.patch(`/api/tasks/${id}/reject`),

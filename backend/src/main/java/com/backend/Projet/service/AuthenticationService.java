@@ -120,13 +120,20 @@ public class AuthenticationService {
     public User authenticate(LoginUserDto input) {
         String normalizedPhone = MauritaniaPhoneUtils.normalize(input.getPhone());
         User user = userRepository.findByPhone(normalizedPhone)
-                .orElseThrow(() -> new BadCredentialsException("Invalid phone or password"));
+                .orElseThrow(() -> new BusinessException("PHONE_NOT_FOUND"));
+                
         if (!user.isEnabled()) {
-            throw new BusinessException("Account not verified. Please verify your account.");
+            throw new BusinessException("ACCOUNT_NOT_VERIFIED");
         }
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(normalizedPhone, input.getPassword())
-        );
+        
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(normalizedPhone, input.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            throw new BusinessException("INCORRECT_PASSWORD");
+        }
+        
         return user;
     }
 
@@ -226,6 +233,11 @@ public class AuthenticationService {
             currentUser.setPhone(normalizedPhone);
         }
         User saved = userRepository.save(currentUser);
+        // Sync phone with worker profile if user is a worker
+        workerRepository.findByUserId(saved.getId()).ifPresent(worker -> {
+            worker.setPhoneNumber(saved.getPhone());
+            workerRepository.save(worker);
+        });
         return userMapper.toDto(saved);
     }
 
@@ -235,10 +247,8 @@ public class AuthenticationService {
         currentUser.setImageUrl(fileStorageService.storeUserImage(file));
         User saved = userRepository.save(currentUser);
         workerRepository.findByUserId(saved.getId()).ifPresent(worker -> {
-            if (worker.getImageUrl() == null || worker.getImageUrl().isBlank()) {
-                worker.setImageUrl(saved.getImageUrl());
-                workerRepository.save(worker);
-            }
+            worker.setImageUrl(saved.getImageUrl());
+            workerRepository.save(worker);
         });
         if (previousImageUrl != null && !previousImageUrl.isBlank() && !previousImageUrl.equals(saved.getImageUrl())) {
             fileStorageService.deleteStoredFile(previousImageUrl);
@@ -255,10 +265,10 @@ public class AuthenticationService {
 
         notificationRepository.deleteByUserId(userId);
 
-        Worker worker = workerRepository.findByUserId(userId).orElse(null);
-        if (worker != null) {
+        // 1. Cleanup as a worker (if applicable)
+        workerRepository.findByUserId(userId).ifPresent(worker -> {
             Long workerId = worker.getId();
-            log.info("User is a worker (ID: {}). Cleaning up worker data.", workerId);
+            log.info("Cleaning up data for worker ID: {}", workerId);
             ratingRepository.deleteByTaskAssignedWorkerId(workerId);
             taskRepository.clearAssignedWorkerByWorkerId(workerId);
             ratingRepository.deleteByBookingWorkerId(workerId);
@@ -268,14 +278,23 @@ public class AuthenticationService {
             fileStorageService.deleteStoredFile(worker.getImageUrl());
             fileStorageService.deleteStoredFile(worker.getIdentityDocumentUrl());
             workerRepository.delete(worker);
-        }
+        });
 
+        // 2. Cleanup as a client/user
+        // Delete ratings for bookings and tasks owned by the user
         ratingRepository.deleteByBookingUserId(userId);
+        ratingRepository.deleteByTaskUserId(userId);
+        // Delete ratings given BY the user
         ratingRepository.deleteByUserId(userId);
+
+        // Delete offers for tasks owned by the user
         offerRepository.deleteByTaskUserId(userId);
+
+        // Delete bookings and tasks
         bookingRepository.deleteByUserId(userId);
         taskRepository.deleteByUserId(userId);
 
+        // Final cleanup
         fileStorageService.deleteStoredFile(managedUser.getImageUrl());
         userRepository.delete(managedUser);
         log.info("Successfully deleted user ID: {}", userId);

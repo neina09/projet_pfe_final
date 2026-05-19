@@ -48,10 +48,7 @@ public class Worker {
     @JsonProperty("bio")
     private String bio;
 
-    @Min(value = 0, message = "Salary must be positive")
-    @Column(nullable = false)
-    @JsonProperty("salary")
-    private int salary;
+
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -76,4 +73,11 @@ public class Worker {
 
     @Column(name = "verification_notes", length = 500)
     private String verificationNotes;
+
+    @Column(name = "subscription_required", nullable = false)
+    @Builder.Default
+    private boolean subscriptionRequired = false;
+
+    @OneToOne(mappedBy = "worker", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    private WorkerSubscription subscription;
 }

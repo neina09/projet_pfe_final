@@ -39,6 +39,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     long countByStatus(BookingStatus status);
 
+    @EntityGraph(attributePaths = {"user", "worker", "worker.user"})
+    List<Booking> findByWorkerIdAndStatusAndIdNotAndBookingDateBetween(
+            Long workerId, BookingStatus status, Long id, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
     @Modifying
     void deleteByUserId(Long userId);
 

@@ -59,6 +59,10 @@ public class FileStorageService {
         return store(file, "workers/documents", ALLOWED_DOCUMENT_EXTENSIONS);
     }
 
+    public String storePaymentReceipt(MultipartFile file) {
+        return store(file, "workers/subscriptions", ALLOWED_DOCUMENT_EXTENSIONS);
+    }
+
     public Path getUploadRoot() {
         return uploadRoot;
     }

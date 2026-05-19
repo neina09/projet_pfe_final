@@ -18,19 +18,20 @@ export function normalizeWorker(worker = {}) {
     location: worker.location || worker.address || '',
     city: worker.city || worker.location || worker.address || '',
     address: worker.address || worker.location || '',
-    salary: worker.salary ?? worker.dailyRate ?? worker.salaryExpectation ?? null,
-    dailyRate: worker.dailyRate ?? worker.salary ?? worker.salaryExpectation ?? null,
-    salaryExpectation: worker.salaryExpectation ?? worker.salary ?? worker.dailyRate ?? null,
     profilePictureUrl: worker.profilePictureUrl || worker.imageUrl || '',
     imageUrl: worker.imageUrl || worker.profilePictureUrl || '',
     phone: worker.phone || worker.phoneNumber || worker.userPhone || '',
     phoneNumber: worker.phoneNumber || worker.phone || worker.userPhone || '',
     rating: worker.rating ?? worker.averageRating ?? null,
     averageRating: worker.averageRating ?? worker.rating ?? null,
-    availability: worker.availability || (worker.available ? 'AVAILABLE' : 'BUSY'),
+    subscriptionRequired: Boolean(worker.subscriptionRequired),
+    subscriptionActive: Boolean(worker.subscriptionActive),
+    subscriptionPaymentStatus: worker.subscriptionPaymentStatus || null,
+    subscriptionEndsAt: worker.subscriptionEndsAt || null,
+    availability: worker.availability || (worker.available === false ? 'BUSY' : 'AVAILABLE'),
     available: typeof worker.available === 'boolean'
       ? worker.available
-      : worker.availability === 'AVAILABLE',
+      : (worker.availability ? worker.availability === 'AVAILABLE' : true),
     skills: Array.isArray(worker.skills) ? worker.skills : [],
     portfolioPhotos: Array.isArray(worker.portfolioPhotos) ? worker.portfolioPhotos : [],
     reviews: Array.isArray(worker.reviews) ? worker.reviews : [],
@@ -42,7 +43,6 @@ export function normalizeTask(task = {}) {
     ...task,
     location: task.location || task.address || '',
     address: task.address || task.location || '',
-    budget: task.budget ?? task.price ?? null,
     offersCount: task.offersCount ?? task.offerCount ?? undefined,
     isRated: Boolean(task.isRated ?? task.rated),
   }
@@ -51,9 +51,34 @@ export function normalizeTask(task = {}) {
 export function normalizeBooking(booking = {}) {
   return {
     ...booking,
-    clientName: booking.clientName || booking.userName || '',
-    workerName: booking.workerName || '',
+    clientName: booking.clientName || booking.userName || booking.user?.name || '',
+    clientPhoto: booking.userImageUrl || booking.clientPhoto || booking.clientImageUrl || booking.user?.profilePictureUrl || '',
+    workerName: booking.workerName || booking.worker?.name || '',
+    workerPhoto: booking.workerImageUrl || booking.workerPhoto || booking.worker?.profilePictureUrl || '',
+    workerPhone: booking.workerPhone || booking.worker?.phone || booking.worker?.user?.phone || '',
     date: booking.date || booking.bookingDate || booking.createdAt || '',
+    clientPhone: booking.clientPhone || booking.user?.phone || '',
+    locationDetails: booking.locationDetails || booking.location_details || '',
     isRated: Boolean(booking.isRated ?? booking.rated),
+  }
+}
+
+export function normalizeOffer(offer = {}) {
+  const worker = offer.worker || {}
+  const normalizedWorker = normalizeWorker(worker)
+  
+  // Handle flat availability from backend OfferResponseDto
+  let isAvailable = normalizedWorker.available
+  if (offer.workerAvailability) {
+    isAvailable = offer.workerAvailability === 'AVAILABLE'
+  }
+
+  return {
+    ...offer,
+    workerName: offer.workerName || normalizedWorker.name || '',
+    workerPhoto: offer.workerImageUrl || offer.workerPhoto || normalizedWorker.profilePictureUrl || '',
+    workerId: offer.workerId || normalizedWorker.id || '',
+    taskId: offer.taskId || offer.task?.id || '',
+    workerAvailable: isAvailable,
   }
 }

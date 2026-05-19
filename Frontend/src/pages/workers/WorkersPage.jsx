@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { Search, SlidersHorizontal, Users, ShieldCheck, Eye, Pencil, Trash2, Plus, CheckCircle2, XCircle, UserSquare2, Phone, MapPin } from 'lucide-react'
+import { Search, SlidersHorizontal, Users, ShieldCheck, Eye, Pencil, Trash2, Plus, CheckCircle2, XCircle, UserSquare2, Phone, MapPin, LocateFixed, X, CreditCard } from 'lucide-react'
 import { workersApi } from '../../api/workers'
 import { adminApi } from '../../api/admin'
 import { authApi } from '../../api/auth'
@@ -18,6 +18,7 @@ import Input, { Select } from '../../components/ui/Input'
 import { Textarea } from '../../components/ui/Input'
 import { normalizeWorker } from '../../lib/normalizers'
 import { endpoint } from '../../api/endpoints'
+import { formatAddress } from '../../lib/utils'
 
 const PROFESSIONS = [
   { id: 'plumber', labelKey: 'home.categories.plumber' },
@@ -55,7 +56,6 @@ const emptyWorkerForm = {
   phoneNumber: '',
   job: '',
   address: '',
-  salary: '',
   nationalIdNumber: '',
 }
 
@@ -117,7 +117,7 @@ function FileUploadField({ label, hint, file, onChange, accept, capture }) {
 
 export default function WorkersPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, refreshProfile } = useAuth()
   const isAdmin = user?.role === 'ADMIN'
 
   const [searchParams] = useSearchParams()
@@ -126,6 +126,47 @@ export default function WorkersPage() {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState(() => searchParams.get('profession') || '')
+  const [locationSearch, setLocationSearch] = useState('')
+  const [locatingSearch, setLocatingSearch] = useState(false)
+
+  const handleDetectLocationSearch = () => {
+    if (!navigator.geolocation) return
+    setLocatingSearch(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=ar`,
+            { headers: { 'Accept-Language': 'ar' } }
+          )
+          if (!response.ok) throw new Error()
+          const data = await response.json()
+          const address = data?.address || {}
+          const readableName = [
+            address.suburb,
+            address.neighbourhood,
+            address.quarter,
+            address.city_district,
+            address.city,
+            address.town,
+            address.village,
+            address.state,
+          ].find(Boolean)
+          
+          if (readableName) {
+            setLocationSearch(readableName)
+          } else if (data?.display_name) {
+             setLocationSearch(data.display_name.split(',')[0])
+          }
+        } catch {}
+        setLocatingSearch(false)
+      },
+      () => setLocatingSearch(false),
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
   const [filterAvailable, setFilterAvailable] = useState(false)
 
   // Admin states
@@ -172,10 +213,14 @@ export default function WorkersPage() {
     const name = (w.name || w.fullName || w.user?.name || '').toLowerCase()
     const profId = (w.job || w.profession || '').toLowerCase()
     const profLabel = t(`home.categories.${profId}`).toLowerCase()
+    const address = (w.address || w.location || '').toLowerCase()
     const q = search.toLowerCase()
-    const matchSearch = !q || name.includes(q) || profId.includes(q) || profLabel.includes(q)
+    const locQ = locationSearch.toLowerCase()
+    
+    const matchSearch = !q || name.includes(q) || profId.includes(q) || profLabel.includes(q) || address.includes(q)
+    const matchLocation = !locQ || address.includes(locQ)
     const matchAvail = !filterAvailable || w.available || w.availability === 'AVAILABLE'
-    return matchSearch && matchAvail
+    return matchSearch && matchLocation && matchAvail
   })
 
   // Admin Logic
@@ -220,7 +265,6 @@ export default function WorkersPage() {
         phoneNumber: data.phoneNumber || '',
         job: data.job || '',
         address: data.address || '',
-        salary: String(data.salary ?? ''),
         nationalIdNumber: data.nationalIdNumber || '',
       })
       setSelectedWorker(data)
@@ -284,7 +328,6 @@ export default function WorkersPage() {
         phoneNumber: workerForm.phoneNumber.trim(),
         job: workerForm.job.trim(),
         address: workerForm.address.trim(),
-        salary: Number(workerForm.salary || 0),
         nationalIdNumber: workerForm.nationalIdNumber.trim(),
       }
       let workerId = selectedWorker?.id
@@ -298,6 +341,13 @@ export default function WorkersPage() {
       
       const identityFile = await combineImages(workerIdentityFrontFile, workerIdentityBackFile)
       if (identityFile && workerId) await workersApi.uploadIdentityDocument(workerId, identityFile)
+
+      // Refresh profile if we edited ourselves
+      const editedUserId = workerFormMode === 'create' ? workerForm.userId : selectedWorker?.userId
+      if (String(editedUserId) === String(user?.id)) {
+        try { await refreshProfile() } catch {}
+      }
+      
       setWorkerFormOpen(false)
       resetWorkerForm()
       await loadAll()
@@ -354,8 +404,37 @@ export default function WorkersPage() {
             />
           </div>
           <button
+            onClick={locationSearch ? undefined : handleDetectLocationSearch}
+            disabled={locatingSearch}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+              locationSearch 
+                ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            {locatingSearch ? (
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <LocateFixed size={16} className={locationSearch ? 'text-emerald-500' : 'text-gray-400'} />
+            )}
+            <span className="max-w-[120px] sm:max-w-[200px] truncate">
+              {locationSearch || t('workers.profile.location', { defaultValue: 'Localisation' })}
+            </span>
+            {locationSearch && (
+              <span 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLocationSearch('');
+                }}
+                className="ms-1.5 p-0.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-full transition-colors inline-flex items-center justify-center text-emerald-600 dark:text-emerald-400 cursor-pointer"
+              >
+                <X size={12} className="stroke-[2.5]" />
+              </span>
+            )}
+          </button>
+          <button
             onClick={() => setFilterAvailable(f => !f)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all ${
+            className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all whitespace-nowrap ${
               filterAvailable
                 ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
                 : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
@@ -402,13 +481,7 @@ export default function WorkersPage() {
                     </button>
                   </div>
                 )}
-                {isAdmin && worker.verificationStatus && (
-                  <div className="absolute top-4 end-4 z-10">
-                    <Badge variant={workerStatusVariant[worker.verificationStatus] || 'gray'}>
-                      {t(`workerStatusLabel.${worker.verificationStatus}`) || worker.verificationStatus}
-                    </Badge>
-                  </div>
-                )}
+
               </div>
             ))}
           </div>
@@ -417,37 +490,63 @@ export default function WorkersPage() {
         {/* Admin Modals */}
         <Modal open={workerModalOpen} onClose={() => setWorkerModalOpen(false)} title={t('worker.profile.viewProfile')} size="lg">
           {selectedWorker && (
-            <div className="grid gap-6 md:grid-cols-[220px,1fr]">
-              <div className="space-y-4">
+            <div className="flex flex-col gap-6">
+              <div className="w-full">
                 <div className="rounded-3xl border border-gray-100 p-4 text-center dark:border-gray-800">
-                  {selectedWorker.imageUrl ? (
-                    <img src={resolveAsset(selectedWorker.imageUrl)} alt={selectedWorker.name} className="mx-auto mb-3 h-28 w-28 rounded-full object-cover" />
-                  ) : (
-                    <div className="mx-auto mb-3 flex h-28 w-28 items-center justify-center rounded-full bg-primary-100 text-3xl font-bold text-primary-600">
-                      {(selectedWorker.name || '?').slice(0, 1)}
-                    </div>
-                  )}
+                  <div className="mx-auto mb-3 h-28 w-28 rounded-full overflow-hidden bg-primary-100 flex items-center justify-center text-3xl font-bold text-primary-600 border-2 border-primary-50">
+                    {selectedWorker.imageUrl ? (
+                      <>
+                        <img 
+                          src={resolveAsset(selectedWorker.imageUrl)} 
+                          alt={selectedWorker.name} 
+                          className="h-full w-full object-cover" 
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'block';
+                          }}
+                        />
+                        <span style={{ display: 'none' }}>{(selectedWorker.name || '?').slice(0, 1).toUpperCase()}</span>
+                      </>
+                    ) : (
+                      <span>{(selectedWorker.name || '?').slice(0, 1).toUpperCase()}</span>
+                    )}
+                  </div>
                   <h3 className="font-semibold text-gray-900 dark:text-white">{selectedWorker.name}</h3>
                   <p className="text-sm text-gray-500">{t(`home.categories.${selectedWorker.job}`, { defaultValue: selectedWorker.job })}</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
-                    <p className="mb-1 text-xs text-gray-500">{t('worker.user')}</p>
-                    <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-white"><UserSquare2 size={14} /> {selectedWorker.username || '-'}</p>
-                  </div>
-                  <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
+                  <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/50">
                     <p className="mb-1 text-xs text-gray-500">{t('admin.workerTable.status')}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{t(`workerStatusLabel.${selectedWorker.verificationStatus}`) || selectedWorker.verificationStatus}</p>
+                    <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                      <ShieldCheck size={14} className="text-primary-500" />
+                      {t(`workerStatusLabel.${selectedWorker.verificationStatus}`) || selectedWorker.verificationStatus || '-'}
+                    </p>
                   </div>
-                  <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
+
+                  <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/50">
                     <p className="mb-1 text-xs text-gray-500">{t('worker.phone')}</p>
-                    <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-white"><Phone size={14} /> {selectedWorker.phoneNumber || '-'}</p>
+                    <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                      <Phone size={14} className="text-primary-500" />
+                      <span dir="ltr">{selectedWorker.phoneNumber || selectedWorker.userPhone || '-'}</span>
+                    </p>
                   </div>
-                  <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-900/50">
+
+                  <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/50">
                     <p className="mb-1 text-xs text-gray-500">{t('worker.address')}</p>
-                    <p className="flex items-center gap-2 font-medium text-gray-900 dark:text-white"><MapPin size={14} /> {selectedWorker.address || '-'}</p>
+                    <p className="flex items-start gap-2 font-medium text-gray-900 dark:text-white">
+                      <MapPin size={14} className="mt-0.5 flex-shrink-0 text-primary-500" />
+                      <span className="leading-relaxed">{formatAddress(selectedWorker.address) || '-'}</span>
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-900/50">
+                    <p className="mb-1 text-xs text-gray-500">{t('worker.nationalId')}</p>
+                    <p className="flex items-center gap-2 font-medium tracking-wider text-gray-900 dark:text-white">
+                      <CreditCard size={14} className="text-primary-500" />
+                      {selectedWorker.nationalIdNumber || '-'}
+                    </p>
                   </div>
                 </div>
                 {selectedWorker.identityDocumentUrl && (
@@ -491,7 +590,6 @@ export default function WorkersPage() {
                 {PROFESSIONS.map(p => <option key={p.id} value={p.id}>{t(p.labelKey)}</option>)}
               </Select>
               <Input label={t('worker.address')} value={workerForm.address} onChange={e => setWorkerForm(p => ({ ...p, address: e.target.value }))} required />
-              <Input label={t('worker.dailySalary')} type="number" value={workerForm.salary} onChange={e => setWorkerForm(p => ({ ...p, salary: e.target.value }))} required />
               <Input label={t('worker.nationalId')} value={workerForm.nationalIdNumber} onChange={e => setWorkerForm(p => ({ ...p, nationalIdNumber: e.target.value }))} required />
             </div>
             <div className="grid gap-4 sm:grid-cols-3">

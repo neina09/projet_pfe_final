@@ -24,6 +24,7 @@ public class TaskService {
     private final NotificationService notificationService;
     private final com.backend.Projet.mapper.TaskMapper taskMapper;
     private final com.backend.Projet.mapper.OfferMapper offerMapper;
+    private final WorkerSubscriptionService workerSubscriptionService;
 
     @Transactional
     public TaskResponseDto createTask(TaskRequestDto input, User user) {
@@ -377,8 +378,12 @@ public class TaskService {
         Worker worker = workerRepository.findByUserId(workerUser.getId())
                 .orElseThrow(() -> new BusinessException(
                         "Please complete your worker profile before submitting offers"));
+        workerSubscriptionService.refreshSubscriptionState(worker);
         if (worker.getVerificationStatus() != WorkerVerificationStatus.VERIFIED) {
             throw new BusinessException("Only verified workers can submit offers");
+        }
+        if (worker.isSubscriptionRequired() && !workerSubscriptionService.isSubscriptionActive(worker)) {
+            throw new BusinessException("Only workers with an active subscription can submit offers");
         }
         if (worker.getAvailability() != null
                 && worker.getAvailability() != WorkerAvailability.AVAILABLE) {
@@ -497,18 +502,26 @@ public class TaskService {
 
         Worker requestingWorker = workerRepository.findByUserId(workerUser.getId())
                 .orElseThrow(() -> new BusinessException("Please complete your worker profile first"));
+        workerSubscriptionService.refreshSubscriptionState(requestingWorker);
         if (requestingWorker.getVerificationStatus() != WorkerVerificationStatus.VERIFIED) {
             throw new BusinessException("Only verified workers can request another worker");
+        }
+        if (requestingWorker.isSubscriptionRequired() && !workerSubscriptionService.isSubscriptionActive(requestingWorker)) {
+            throw new BusinessException("Only workers with an active subscription can request another worker");
         }
 
         Worker requestedWorker = workerRepository.findById(dto.getWorkerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Requested worker not found"));
+        workerSubscriptionService.refreshSubscriptionState(requestedWorker);
 
         if (requestedWorker.getId().equals(requestingWorker.getId())) {
             throw new BusinessException("You cannot request yourself");
         }
         if (requestedWorker.getVerificationStatus() != WorkerVerificationStatus.VERIFIED) {
             throw new BusinessException("Requested worker must be verified");
+        }
+        if (requestedWorker.isSubscriptionRequired() && !workerSubscriptionService.isSubscriptionActive(requestedWorker)) {
+            throw new BusinessException("Requested worker must have an active subscription");
         }
         if (requestedWorker.getAvailability() != null
                 && requestedWorker.getAvailability() != WorkerAvailability.AVAILABLE) {

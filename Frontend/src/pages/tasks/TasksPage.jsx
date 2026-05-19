@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { Search, Plus, Briefcase, LocateFixed, MapPinned } from 'lucide-react'
+import { Search, Plus, Briefcase, LocateFixed, MapPinned, MapPin, X } from 'lucide-react'
 import { tasksApi } from '../../api/tasks'
 import { useAuth } from '../../context/AuthContext'
 import TaskCard from '../../components/tasks/TaskCard'
@@ -14,6 +14,7 @@ import { Textarea, Select } from '../../components/ui/Input'
 import { PageLoader } from '../../components/ui/Spinner'
 import EmptyState from '../../components/ui/EmptyState'
 import { normalizeTask } from '../../lib/normalizers'
+import MapPicker from '../../components/ui/MapPicker'
 
 // Status labels are handled via t() in the component
 const TASK_TYPE_OPTIONS = [
@@ -47,11 +48,13 @@ export default function TasksPage() {
     }
   }, [user])
   const [createOpen, setCreateOpen] = useState(false)
-  const [form, setForm] = useState({ title: '', description: '', profession: '', address: '', latitude: '', longitude: '' })
+  const [form, setForm] = useState({ title: '', description: '', profession: '', address: '', locationDetails: '', latitude: '', longitude: '' })
   const [submitting, setSubmitting] = useState(false)
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState('')
   const [resolvingAddress, setResolvingAddress] = useState(false)
+  const [showMap, setShowMap] = useState(false)
+  const [formErrors, setFormErrors] = useState({})
 
   const load = () => {
     setLoading(true)
@@ -129,28 +132,46 @@ export default function TasksPage() {
     }
   }, [availableStatuses, statusFilter])
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
+  const [locationSearch, setLocationSearch] = useState('')
+  const [locatingSearch, setLocatingSearch] = useState(false)
 
-    return tasks.filter((task) => {
-      const normalizedStatus = (task.status === 'PENDING_REVIEW' || task.status === 'PENDING') ? 'PENDING' : task.status
-      const searchableText = [
-        task.title,
-        task.description,
-        task.profession,
-        task.address,
-        task.location,
-        task.userName,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-
-      const matchSearch = !q || searchableText.includes(q)
-      const matchStatus = statusFilter === 'ALL' || normalizedStatus === statusFilter
-      return matchSearch && matchStatus
-    })
-  }, [search, statusFilter, tasks])
+  const handleDetectLocationSearch = () => {
+    if (!navigator.geolocation) return
+    setLocatingSearch(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=ar`,
+            { headers: { 'Accept-Language': 'ar' } }
+          )
+          if (!response.ok) throw new Error()
+          const data = await response.json()
+          const address = data?.address || {}
+          const readableName = [
+            address.suburb,
+            address.neighbourhood,
+            address.quarter,
+            address.city_district,
+            address.city,
+            address.town,
+            address.village,
+            address.state,
+          ].find(Boolean)
+          
+          if (readableName) {
+            setLocationSearch(readableName)
+          } else if (data?.display_name) {
+             setLocationSearch(data.display_name.split(',')[0])
+          }
+        } catch {}
+        setLocatingSearch(false)
+      },
+      () => setLocatingSearch(false),
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -179,20 +200,64 @@ export default function TasksPage() {
     )
   }
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const locQ = locationSearch.trim().toLowerCase()
+
+    return tasks.filter((task) => {
+      const normalizedStatus = (task.status === 'PENDING_REVIEW' || task.status === 'PENDING') ? 'PENDING' : task.status
+      const profLabel = task.profession ? t(`home.categories.${task.profession.toLowerCase()}`) : ''
+      const searchableText = [
+        task.title,
+        task.description,
+        task.profession,
+        profLabel,
+        task.address,
+        task.location,
+        task.userName,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        
+      const locText = [task.address, task.location].filter(Boolean).join(' ').toLowerCase()
+
+      const matchSearch = !q || searchableText.includes(q)
+      const matchLocation = !locQ || locText.includes(locQ)
+      const matchStatus = statusFilter === 'ALL' || normalizedStatus === statusFilter
+      return matchSearch && matchLocation && matchStatus
+    })
+  }, [search, locationSearch, statusFilter, tasks, t])
+
   const handleCreate = async (e) => {
     e.preventDefault()
+    
+    const newErrors = {}
+    if (!form.title) newErrors.title = t('errors.required')
+    if (!form.description) newErrors.description = t('errors.required')
+    if (!form.profession) newErrors.profession = t('errors.required')
+    if (!form.address) newErrors.address = t('errors.required')
+    
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors)
+      return
+    }
+
     setSubmitting(true)
     try {
       await tasksApi.create({
         title: form.title,
         description: form.description,
         profession: form.profession,
-        address: form.address,
+        address: form.locationDetails 
+          ? `${form.address} (${form.locationDetails})` 
+          : form.address,
         latitude: form.latitude ? Number(form.latitude) : undefined,
         longitude: form.longitude ? Number(form.longitude) : undefined,
       })
       setCreateOpen(false)
-      setForm({ title: '', description: '', profession: '', address: '', latitude: '', longitude: '' })
+      setForm({ title: '', description: '', profession: '', address: '', locationDetails: '', latitude: '', longitude: '' })
+      setFormErrors({})
       setLocationError('')
       load()
     } catch {}
@@ -232,8 +297,37 @@ export default function TasksPage() {
               className="input-base ps-10"
             />
           </div>
+          <button
+            onClick={locationSearch ? undefined : handleDetectLocationSearch}
+            disabled={locatingSearch}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all duration-200 whitespace-nowrap ${
+              locationSearch 
+                ? 'border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+            }`}
+          >
+            {locatingSearch ? (
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <LocateFixed size={16} className={locationSearch ? 'text-emerald-500' : 'text-gray-400'} />
+            )}
+            <span className="max-w-[120px] sm:max-w-[200px] truncate">
+              {locationSearch || t('workers.profile.location', { defaultValue: 'Localisation' })}
+            </span>
+            {locationSearch && (
+              <span 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLocationSearch('');
+                }}
+                className="ms-1.5 p-0.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-full transition-colors inline-flex items-center justify-center text-emerald-600 dark:text-emerald-400 cursor-pointer"
+              >
+                <X size={12} className="stroke-[2.5]" />
+              </span>
+            )}
+          </button>
           {user && (
-            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 sm:pb-0">
               {availableStatuses.map(s => (
                 <button
                   key={s}
@@ -264,52 +358,84 @@ export default function TasksPage() {
         )}
 
         {/* Create Task Modal */}
-        <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={t('tasks.create')}>
-          <form onSubmit={handleCreate} className="flex flex-col gap-4">
-            <Input label={t('tasks.form.title')} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
-            <Textarea label={t('tasks.form.description')} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} required />
-            <Select label={t('tasks.form.profession')} value={form.profession} onChange={e => setForm(f => ({ ...f, profession: e.target.value }))} required>
+        <Modal open={createOpen} onClose={() => { setCreateOpen(false); setFormErrors({}) }} title={t('tasks.create')}>
+          <form onSubmit={handleCreate} className="flex flex-col gap-4" noValidate>
+            <Input 
+              label={t('tasks.form.title')} 
+              value={form.title} 
+              onChange={e => {
+                setForm(f => ({ ...f, title: e.target.value }))
+                if (formErrors.title) setFormErrors(prev => ({ ...prev, title: null }))
+              }} 
+              error={formErrors.title}
+              required 
+            />
+            <Textarea 
+              label={t('tasks.form.description')} 
+              value={form.description} 
+              onChange={e => {
+                setForm(f => ({ ...f, description: e.target.value }))
+                if (formErrors.description) setFormErrors(prev => ({ ...prev, description: null }))
+              }} 
+              error={formErrors.description}
+              required 
+            />
+            <Select 
+              label={t('tasks.form.profession')} 
+              value={form.profession} 
+              onChange={e => {
+                setForm(f => ({ ...f, profession: e.target.value }))
+                if (formErrors.profession) setFormErrors(prev => ({ ...prev, profession: null }))
+              }} 
+              error={formErrors.profession}
+              required
+            >
               <option value="">{t('common.select')}</option>
               {TASK_TYPE_OPTIONS.map((option) => (
                 <option key={option.value || option.id} value={option.value || option.id}>{t(option.labelKey)}</option>
               ))}
             </Select>
-            <Input label={t('tasks.form.location')} value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} required />
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/60">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                  <MapPinned size={16} className="text-primary-500" />
-                  {t('tasks.form.location')}
-                </div>
-                <Button type="button" variant="secondary" onClick={handleDetectLocation} loading={locating} className="px-4 py-2 text-sm">
-                  <LocateFixed size={15} />
-                  {t('tasks.form.location')}
-                </Button>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowMap(!showMap)}
+                  className="text-xs font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1"
+                >
+                  <MapPin size={14} className="text-primary-500" />
+                  {showMap ? t('becomeWorker.form.typeAddress') : t('becomeWorker.form.selectOnMap')}
+                </button>
               </div>
 
-              {locationError && (
-                <p className="mb-3 text-sm text-red-500">{locationError}</p>
+              {showMap && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                  <MapPicker onLocationSelect={({ address, lat, lng }) => {
+                    setForm(f => ({ ...f, address, latitude: lat, longitude: lng }))
+                    if (formErrors.address) setFormErrors(prev => ({ ...prev, address: null }))
+                    setShowMap(false)
+                  }} />
+                </motion.div>
               )}
-
-              {(resolvingAddress || locating) && !locationError && (
-                <p className="mb-3 text-sm text-primary-600">{t('common.loading')}</p>
-              )}
-
-              <div className="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700">
-                {form.latitude && form.longitude ? (
-                  <iframe
-                    title="task-location-map"
-                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(form.longitude) - 0.01}%2C${Number(form.latitude) - 0.01}%2C${Number(form.longitude) + 0.01}%2C${Number(form.latitude) + 0.01}&layer=mapnik&marker=${form.latitude}%2C${form.longitude}`}
-                    className="h-64 w-full"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="flex h-64 items-center justify-center bg-white text-sm text-gray-400 dark:bg-gray-950">
-                    {t('common.noData')}
-                  </div>
-                )}
-              </div>
             </div>
+
+            <Input 
+              label={t('tasks.form.location')} 
+              value={form.address} 
+              onChange={e => {
+                setForm(f => ({ ...f, address: e.target.value }))
+                if (formErrors.address) setFormErrors(prev => ({ ...prev, address: null }))
+              }} 
+              placeholder={t('becomeWorker.form.locationPlaceholder')}
+              error={formErrors.address}
+              required 
+            />
+
+            <Input 
+              label={t('bookings.form.locationDetails')} 
+              value={form.locationDetails} 
+              onChange={e => setForm(f => ({ ...f, locationDetails: e.target.value }))}
+              placeholder={t('common.optional')}
+            />
             <div className="flex gap-2 mt-2">
               <Button type="button" variant="secondary" onClick={() => setCreateOpen(false)} className="flex-1">{t('common.cancel')}</Button>
               <Button type="submit" loading={submitting} className="flex-1">{t('tasks.form.submit')}</Button>
