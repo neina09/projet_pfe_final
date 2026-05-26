@@ -49,9 +49,18 @@ export default function BookingsList({
   const [filter, setFilter] = useState('ALL')
   const isRtl = i18n.language?.startsWith('ar')
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 6
+
   const filtered = filter === 'ALL'
     ? bookings
     : bookings.filter(b => b.status === filter)
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginatedBookings = filtered.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  )
 
   const getCount = (status) => {
     if (status === 'ALL') return bookings.length
@@ -68,7 +77,10 @@ export default function BookingsList({
           return (
             <button
               key={status}
-              onClick={() => setFilter(status)}
+              onClick={() => {
+                setFilter(status)
+                setCurrentPage(1)
+              }}
               className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border flex items-center gap-1.5 transition-all duration-200 shrink-0 ${isActive
                   ? 'border-primary-500 text-primary-600 bg-primary-50/80 dark:bg-primary-950/20 dark:text-primary-400 shadow-sm scale-102'
                   : 'border-gray-200 hover:border-gray-300 text-gray-500 hover:text-gray-700 bg-white dark:bg-gray-900 dark:border-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
@@ -108,7 +120,7 @@ export default function BookingsList({
             layout
             className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 items-start"
           >
-            {filtered.map((b, i) => {
+            {paginatedBookings.map((b, i) => {
               const borderAccent = statusBorderClass[b.status] || 'border-s-gray-200'
               const personName = b.workerName || t('common.worker')
 
@@ -249,6 +261,35 @@ export default function BookingsList({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 pt-6 pb-2 border-t border-gray-100 dark:border-gray-800/60 mt-4">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+            className="!px-4"
+          >
+            {isRtl ? 'السابق' : 'Previous'}
+          </Button>
+
+          <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 px-2">
+            {currentPage} / {totalPages}
+          </span>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            className="!px-4"
+          >
+            {isRtl ? 'التالي' : 'Next'}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

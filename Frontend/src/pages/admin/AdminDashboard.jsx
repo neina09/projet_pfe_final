@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import api from '../../api/axios'
 import {
   Briefcase,
-  CalendarCheck,
   CheckCircle2,
   Eye,
   MapPin,
@@ -18,12 +17,16 @@ import {
   UserSquare2,
   Users,
   User,
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  Layers,
   Search,
   XCircle,
   ChevronDown,
   LogOut,
   CreditCard,
-  Receipt,
+  Receipt, TrendingUp,
 } from 'lucide-react'
 import { adminApi } from '../../api/admin'
 import { authApi } from '../../api/auth'
@@ -115,8 +118,95 @@ function FileUploadField({ label, hint, file, onChange, accept }) {
   )
 }
 
+function QuickLinks({ t, isRtl }) {
+  const links = [
+    { icon: Home, label: t('nav.home', {defaultValue: 'الرئيسية'}), to: '/' },
+    { icon: Layers, label: t('nav.tasks', {defaultValue: 'لوحة المهام'}), to: '/tasks' },
+    { icon: Users, label: t('nav.workers', {defaultValue: 'العمال'}), to: '/workers' },
+  ]
+
+  return (
+    <div className="card p-4 hidden lg:flex flex-col gap-3 border shadow-sm rounded-2xl bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800">
+      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 px-2">
+        {t('common.quickLinks', {defaultValue: 'روابط سريعة'})}
+      </div>
+      <div className="flex flex-col gap-1">
+        {links.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-900/20 dark:hover:text-primary-400 transition-all font-medium text-sm group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-500 group-hover:bg-white group-hover:text-primary-500 dark:group-hover:bg-gray-700 transition-colors shadow-sm">
+              <link.icon size={18} />
+            </div>
+            {link.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CalendarWidget({ bookings, t, isRtl }) {
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate()
+  const firstDayOfMonth = (y, m) => new Date(y, m, 1).getDay()
+
+  const year = currentDate.getFullYear()
+  const month = currentDate.getMonth()
+  const days = []
+  const startDay = firstDayOfMonth(year, month)
+  const totalDays = daysInMonth(year, month)
+
+  for (let i = 0; i < startDay; i++) days.push(null)
+  for (let i = 1; i <= totalDays; i++) days.push(new Date(year, month, i))
+
+  const monthNames = [
+    "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+    "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+  ]
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-sm text-gray-900 dark:text-white">{monthNames[month]} {year}</h3>
+        <div className="flex gap-1">
+          <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <ChevronRight size={16} className={isRtl ? '' : 'rotate-180'} />
+          </button>
+          <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <ChevronLeft size={16} className={isRtl ? '' : 'rotate-180'} />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center mb-1">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
+          <span key={d} className="text-[10px] font-bold text-gray-400">{d}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((date, i) => (
+          <div key={i} className="h-8 flex items-center justify-center relative">
+            {date && (
+              <span className={`text-[11px] font-medium ${
+                date.toDateString() === new Date().toDateString() 
+                ? 'w-7 h-7 bg-primary-500 text-white rounded-full flex items-center justify-center shadow-sm' 
+                : 'text-gray-700 dark:text-gray-300'
+              }`}>
+                {date.getDate()}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboard() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isRtl = i18n.language === 'ar' || i18n.dir() === 'rtl'
   const { user, refreshProfile, logout } = useAuth()
   
   const formatJob = (job) => {
@@ -771,13 +861,6 @@ export default function AdminDashboard() {
     return <Layout><PageLoader /></Layout>
   }
 
-  const cards = [
-    { icon: Users, label: t('admin.stats.users'), value: dashboard?.totalUsers ?? 0, color: 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' },
-    { icon: ShieldCheck, label: t('admin.stats.workers'), value: dashboard?.verifiedWorkers ?? 0, color: 'text-primary-500 bg-primary-50 dark:bg-primary-900/20' },
-    { icon: Briefcase, label: t('admin.stats.tasks'), value: dashboard?.pendingTasks ?? 0, color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' },
-    { icon: CalendarCheck, label: t('admin.stats.bookings'), value: dashboard?.completedBookings ?? 0, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20' },
-  ]
-
   const workerImage = resolveAsset(selectedWorker?.imageUrl)
   const workerIdentityDocument = resolveAsset(selectedWorker?.identityDocumentUrl)
   const hasSubscriptionReceipt = Boolean(selectedWorker?.subscriptionReceiptUrl)
@@ -803,26 +886,41 @@ export default function AdminDashboard() {
   return (
     <Layout>
       <div className="page-container py-10">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="section-title">{t('admin.title')}</h1>
-          <div className="flex flex-wrap gap-2">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between flex-wrap gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-1">{t('admin.title')}</h1>
+            <p className="text-gray-500 dark:text-gray-400 flex items-center gap-1.5 text-sm">
+              <span>{t('dashboard.welcome')}،</span>
+              <span className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-400 dark:to-primary-300">
+                {user?.name || user?.fullName || t('common.admin')}
+              </span>
+              <span className="inline-block origin-bottom-right hover:animate-wave cursor-default transition-transform hover:scale-110">👋</span>
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap items-center">
+            <Button
+              variant={activeSection === 'DASHBOARD' ? 'primary' : 'secondary'}
+              onClick={() => setActiveSection('DASHBOARD')}
+              className="rounded-xl"
+            >
+              <TrendingUp size={18} />
+              {t('admin.dashboard', { defaultValue: 'الإحصائيات' })}
+            </Button>
             <Button
               variant={activeSection === 'WORKERS' ? 'primary' : 'secondary'}
               onClick={() => setActiveSection('WORKERS')}
+              className="rounded-xl"
             >
+              <Users size={18} />
               {t('admin.manageWorkers')}
             </Button>
             <Button
-              variant={activeSection === 'MY_TASKS' ? 'primary' : 'secondary'}
-              onClick={() => setActiveSection('MY_TASKS')}
+              variant={activeSection === 'TASKS' ? 'primary' : 'secondary'}
+              onClick={() => setActiveSection('TASKS')}
+              className="rounded-xl"
             >
-              {t('dashboard.myTasks')}
-            </Button>
-            <Button
-              variant={activeSection === 'MY_BOOKINGS' ? 'primary' : 'secondary'}
-              onClick={() => setActiveSection('MY_BOOKINGS')}
-            >
-              {t('dashboard.myBookings')}
+              <Briefcase size={18} />
+              {t('admin.tasks')}
             </Button>
             <Button
               variant="secondary"
@@ -830,7 +928,9 @@ export default function AdminDashboard() {
                 setAdminProfileError('')
                 setAdminProfileOpen(true)
               }}
+              className="rounded-xl"
             >
+              <User size={18} />
               {t('admin.adminProfile')}
             </Button>
             <Button
@@ -840,12 +940,16 @@ export default function AdminDashboard() {
                 setAdminProfileError('')
                 setAdminPromotionOpen(true)
               }}
+              className="rounded-xl"
             >
+              <Plus size={18} />
               {t('admin.addAdmin')}
             </Button>
           </div>
         </motion.div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6 items-start">
+          <div className="flex flex-col gap-6 w-full min-w-0">
         {activeSection === 'DASHBOARD' && (
           <>
             {/* ======= ANALYTICS CHARTS ======= */}
@@ -1180,7 +1284,6 @@ export default function AdminDashboard() {
             )}
           </motion.div>
         )}
-      </div>
 
       <Modal open={workerModalOpen} onClose={() => setWorkerModalOpen(false)} title={t('worker.profile.viewProfile')} size="lg">
         {selectedWorker && (
@@ -1827,6 +1930,15 @@ export default function AdminDashboard() {
         )}
       </Modal>
 
+          </div> {/* End Main Content Column */}
+
+          {/* Sidebar Area */}
+          <div className="flex flex-col gap-6 w-full min-w-0 sticky top-24 h-fit">
+            <CalendarWidget bookings={dashboard?.recentBookings || []} t={t} isRtl={isRtl} />
+            <QuickLinks t={t} isRtl={isRtl} />
+          </div>
+        </div> {/* End Main Grid */}
+      </div> {/* End Page Container */}
     </Layout>
   )
 }

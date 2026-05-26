@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { Briefcase, CalendarCheck, Plus, User, Clock, CheckCircle2, Star, ChevronDown, Pencil, Trash2, XCircle } from 'lucide-react'
+import { Briefcase, CalendarCheck, Plus, User, Clock, CheckCircle2, Star, ChevronDown, Pencil, Trash2, XCircle, Home, Layers, Users, ChevronRight, ChevronLeft } from 'lucide-react'
 import { tasksApi } from '../../api/tasks'
 import { bookingsApi } from '../../api/bookings'
 import { authApi } from '../../api/auth'
@@ -16,7 +16,7 @@ import { Textarea } from '../../components/ui/Input'
 import { PageLoader } from '../../components/ui/Spinner'
 import Modal from '../../components/ui/Modal'
 import StarRating from '../../components/ui/StarRating'
-import { normalizeBooking, normalizeTask } from '../../lib/normalizers'
+import { normalizeBooking, normalizeTask, normalizeOffer } from '../../lib/normalizers'
 import { validateFullName, validatePhone, validatePassword } from '../../lib/validators'
 import { endpoint } from '../../api/endpoints'
 import TasksList from '../../components/dashboard/TasksList'
@@ -54,8 +54,110 @@ function sortTasksByStatus(items = []) {
   })
 }
 
+function QuickLinks({ t, isRtl }) {
+  const links = [
+    { icon: Home, label: t('nav.home', {defaultValue: 'الرئيسية'}), to: '/' },
+    { icon: Layers, label: t('nav.tasks', {defaultValue: 'لوحة المهام'}), to: '/tasks' },
+    { icon: Users, label: t('nav.workers', {defaultValue: 'العمال'}), to: '/workers' },
+  ]
+
+  return (
+    <div className="card p-4 hidden lg:flex flex-col gap-3 border shadow-sm rounded-2xl bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800">
+      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 px-2">
+        {t('common.quickLinks', {defaultValue: 'روابط سريعة'})}
+      </div>
+      <div className="flex flex-col gap-1">
+        {links.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-900/20 dark:hover:text-primary-400 transition-all font-medium text-sm group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-500 group-hover:bg-white group-hover:text-primary-500 dark:group-hover:bg-gray-700 transition-colors shadow-sm">
+              <link.icon size={18} />
+            </div>
+            {link.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CalendarWidget({ bookings, t, isRtl }) {
+  const [currentDate, setCurrentDate] = useState(new Date())
+  
+  const year = currentDate.getFullYear()
+  const month = currentDate.getMonth()
+
+  const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate()
+  const firstDayOfMonth = (y, m) => new Date(y, m, 1).getDay()
+
+  const days = []
+  const startDay = firstDayOfMonth(year, month)
+  const totalDays = daysInMonth(year, month)
+
+  for (let i = 0; i < startDay; i++) days.push(null)
+  for (let i = 1; i <= totalDays; i++) days.push(new Date(year, month, i))
+
+  const hasBooking = (date) => {
+    if (!date) return false
+    return bookings.some(b => {
+      if (!b.date) return false
+      const d = new Date(b.date)
+      return d.getDate() === date.getDate() && d.getMonth() === date.getMonth() && d.getFullYear() === date.getFullYear()
+    })
+  }
+
+  const monthNames = [
+    t('common.months.jan', {defaultValue: 'يناير'}), t('common.months.feb', {defaultValue: 'فبراير'}),
+    t('common.months.mar', {defaultValue: 'مارس'}), t('common.months.apr', {defaultValue: 'أبريل'}),
+    t('common.months.may', {defaultValue: 'مايو'}), t('common.months.jun', {defaultValue: 'يونيو'}),
+    t('common.months.jul', {defaultValue: 'يوليو'}), t('common.months.aug', {defaultValue: 'أغسطس'}),
+    t('common.months.sep', {defaultValue: 'سبتمبر'}), t('common.months.oct', {defaultValue: 'أكتوبر'}),
+    t('common.months.nov', {defaultValue: 'نوفمبر'}), t('common.months.dec', {defaultValue: 'ديسمبر'})
+  ]
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-sm text-gray-900 dark:text-white">{monthNames[month]} {year}</h3>
+        <div className="flex gap-1">
+          <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <ChevronRight size={16} className={isRtl ? '' : 'rotate-180'} />
+          </button>
+          <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <ChevronLeft size={16} className={isRtl ? '' : 'rotate-180'} />
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center mb-1">
+        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+          <span key={i} className="text-[10px] font-bold text-gray-400">{d}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((date, i) => (
+          <div
+            key={i}
+            className={`aspect-square flex items-center justify-center text-[11px] rounded-lg relative ${
+              !date ? '' : 'hover:bg-primary-50 dark:hover:bg-primary-900/20 cursor-default transition-colors'
+            } ${date && date.toDateString() === new Date().toDateString() ? 'bg-primary-500 text-white font-bold' : 'text-gray-600 dark:text-gray-400'}`}
+          >
+            {date?.getDate()}
+            {hasBooking(date) && date.toDateString() !== new Date().toDateString() && (
+              <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary-500" />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function UserDashboard() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const isRtl = i18n.language?.startsWith('ar')
   const { user, refreshProfile } = useAuth()
   const location = useLocation()
   const fileRef = useRef(null)
@@ -63,9 +165,12 @@ export default function UserDashboard() {
   const [tab, setTab] = useState(location.state?.tab || 'tasks')
   const [taskFilter, setTaskFilter] = useState(location.state?.filter || 'ALL')
   const [bookingFilter, setBookingFilter] = useState('ALL')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
 
   const [tasks, setTasks] = useState([])
   const [bookings, setBookings] = useState([])
+  const [receivedOffers, setReceivedOffers] = useState([])
   const [loading, setLoading] = useState(true)
   const [hiddenTaskIds, setHiddenTaskIds] = useState(() => JSON.parse(localStorage.getItem('hidden_tasks') || '[]'))
   const [hiddenBookingIds, setHiddenBookingIds] = useState(() => JSON.parse(localStorage.getItem('hidden_bookings') || '[]'))
@@ -118,10 +223,35 @@ export default function UserDashboard() {
   useEffect(() => {
     Promise.all([
       tasksApi.getMy()
-        .then(r => {
+        .then(async r => {
           const raw = r.data?.content || r.data || []
           const sorted = [...raw].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-          setTasks(sorted.map(normalizeTask))
+          const normalizedTasks = sorted.map(normalizeTask)
+          setTasks(normalizedTasks)
+          
+          // Strategy: Fetch offers for each task that has offersCount > 0
+          // This ensures "Received Offers" are shown even if there's no global endpoint
+          try {
+            const tasksWithOffers = normalizedTasks.filter(t => t.offersCount > 0)
+            if (tasksWithOffers.length > 0) {
+              const offersPromises = tasksWithOffers.map(t => 
+                tasksApi.getOffers(t.id).then(res => 
+                  (res.data || []).map(o => ({ ...o, taskId: t.id, taskTitle: t.title }))
+                )
+              )
+              const allOffersResults = await Promise.all(offersPromises)
+              const flattened = allOffersResults.flat().map(normalizeOffer)
+              setReceivedOffers(flattened.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()))
+            } else {
+              // Fallback to getMyOffers if no tasks with offersCount found or counted differently
+              tasksApi.getMyOffers().then(r => {
+                const rawOffers = r.data?.content || r.data || []
+                setReceivedOffers(rawOffers.map(normalizeOffer))
+              })
+            }
+          } catch (err) {
+            console.error("Error fetching aggregated offers:", err)
+          }
         })
         .catch(() => {}),
       bookingsApi.getMy()
@@ -478,9 +608,9 @@ export default function UserDashboard() {
   }
 
   const stats = [
-    { icon: Briefcase, label: t('dashboard.stats.tasks'), value: tasks.length, color: 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' },
-    { icon: CalendarCheck, label: t('dashboard.stats.bookings'), value: bookings.length, color: 'text-primary-500 bg-primary-50 dark:bg-primary-900/20' },
-    { icon: Clock, label: t('tasks.status.PENDING'), value: tasks.filter(t => t.status === 'PENDING').length, color: 'text-amber-500 bg-amber-50 dark:bg-amber-900/20' },
+    { icon: Briefcase, label: t('dashboard.stats.tasks', { defaultValue: 'طلباتي' }), value: tasks.length, iconBg: 'bg-[#ECF2FF] dark:bg-blue-900/40', textColor: 'text-[#4C6EF5]' },
+    { icon: CalendarCheck, label: t('dashboard.stats.bookings', { defaultValue: 'حجوزاتي' }), value: bookings.length, iconBg: 'bg-[#EBFBEE] dark:bg-emerald-900/40', textColor: 'text-[#40C057]' },
+    { icon: Clock, label: t('tasks.status.PENDING', { defaultValue: 'قيد الانتظار' }), value: tasks.filter(t => t.status === 'PENDING').length, iconBg: 'bg-[#FFF9DB] dark:bg-amber-900/40', textColor: 'text-[#FAB005]' },
   ]
 
   const sortedTasks = sortTasksByStatus(tasks).filter(t => !hiddenTaskIds.includes(String(t.id)))
@@ -523,76 +653,216 @@ export default function UserDashboard() {
           </div>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
-          {stats.map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
-              className="card p-3.5 flex items-center gap-3"
-            >
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${s.color}`}>
-                <s.icon size={20} />
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6 items-start">
+          {/* Main Column */}
+          <div className="flex flex-col gap-6 min-w-0">
+            {/* Stats */}
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              {stats.map((s, i) => (
+                <motion.div
+                  key={s.label}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  className="bg-white dark:bg-gray-900 rounded-[24px] border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all flex-1 min-w-[200px] group"
+                >
+                  <div className={`w-14 h-14 rounded-2xl ${s.iconBg} ${s.textColor} flex items-center justify-center transition-transform group-hover:scale-110 shrink-0`}>
+                    <s.icon size={28} strokeWidth={2.5} />
+                  </div>
+                  <div className={isRtl ? 'text-right' : 'text-left'}>
+                    <div className="text-2xl font-black text-gray-900 dark:text-white leading-none mb-1">
+                      {s.value}
+                    </div>
+                    <div className="text-xs font-bold text-gray-400 whitespace-nowrap">
+                      {s.label}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit mb-2">
+              {['tasks', 'bookings', 'offers'].map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+                    tab === key
+                      ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                  }`}
+                >
+                  {key === 'tasks' ? t('dashboard.myTasks') : key === 'bookings' ? t('dashboard.myBookings') : t('tasks.offers.received', {defaultValue: 'العروض المستلمة'})}
+                </button>
+              ))}
+            </div>
+
+            {tab === 'tasks' && (
+              <div className="flex flex-col gap-4">
+                <TasksList
+                  tasks={filteredTasks.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+                  onEdit={openTaskEditModal}
+                  onCancel={handleCancelTask}
+                  onDelete={handleDeleteTask}
+                  onComplete={handleCompleteTask}
+                  onRate={(task) => openRatingModal({ type: 'task', id: task.id, name: task.assignedWorkerName || task.title })}
+                  cancelling={cancelling}
+                />
+                {filteredTasks.length > itemsPerPage && (
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                     <button 
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => prev - 1)}
+                      className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                     >
+                       <ChevronRight size={16} className={isRtl ? '' : 'rotate-180'} />
+                     </button>
+                     <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
+                       {currentPage} / {Math.ceil(filteredTasks.length / itemsPerPage)}
+                     </span>
+                     <button 
+                      disabled={currentPage === Math.ceil(filteredTasks.length / itemsPerPage)}
+                      onClick={() => setCurrentPage(prev => prev + 1)}
+                      className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                     >
+                       <ChevronLeft size={16} className={isRtl ? '' : 'rotate-180'} />
+                     </button>
+                  </div>
+                )}
               </div>
-              <div>
-                <div className="text-xl font-bold text-gray-900 dark:text-white">{s.value}</div>
-                <div className="text-xs text-gray-500">{s.label}</div>
+            )}
+
+            {tab === 'bookings' && (
+               <div className="flex flex-col gap-4">
+                <BookingsList
+                  bookings={filteredBookings.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
+                  onEdit={openEditBooking}
+                  onCancel={handleCancelBooking}
+                  onDelete={handleDeleteBooking}
+                  onRate={(b) => openRatingModal({ type: 'booking', id: b.id, name: b.workerName || t('common.worker') })}
+                  onView={setViewingBooking}
+                  cancelling={cancelling}
+                  deletingBooking={deletingBooking}
+                />
+                {filteredBookings.length > itemsPerPage && (
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                     <button 
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => prev - 1)}
+                      className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                     >
+                       <ChevronRight size={16} className={isRtl ? '' : 'rotate-180'} />
+                     </button>
+                     <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
+                       {currentPage} / {Math.ceil(filteredBookings.length / itemsPerPage)}
+                     </span>
+                     <button 
+                      disabled={currentPage === Math.ceil(filteredBookings.length / itemsPerPage)}
+                      onClick={() => setCurrentPage(prev => prev + 1)}
+                      className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                     >
+                       <ChevronLeft size={16} className={isRtl ? '' : 'rotate-180'} />
+                     </button>
+                  </div>
+                )}
               </div>
-            </motion.div>
-          ))}
+            )}
+
+            {tab === 'offers' && (
+              <div className="flex flex-col gap-4">
+                <AnimatePresence mode="popLayout">
+                  {receivedOffers.length === 0 ? (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16 bg-white dark:bg-gray-900 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800 shadow-sm">
+                      <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 flex items-center justify-center text-gray-400">
+                        <Clock size={28} className="opacity-60" />
+                      </div>
+                      <h3 className="font-bold text-gray-800 dark:text-white mb-1">{t('tasks.offers.noOffers')}</h3>
+                      <p className="text-sm text-gray-400 max-w-sm mx-auto">{isRtl ? 'لا توجد عروض مستلمة على مهامك حالياً.' : 'No received offers on your tasks currently.'}</p>
+                    </motion.div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3">
+                      {receivedOffers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((offer, i) => (
+                        <motion.div
+                          key={offer.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="card p-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-s-4 border-s-primary-500"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 font-bold overflow-hidden shadow-sm shrink-0">
+                               {offer.workerPhoto ? <img src={offer.workerPhoto} className="w-full h-full object-cover" /> : (offer.workerName || '?')[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-gray-900 dark:text-white truncate">{offer.workerName}</h4>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">{offer.taskTitle || offer.message}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant={offer.status === 'PENDING' ? 'yellow' : 'green'} className="text-[10px] px-2 py-0">
+                                  {t(`tasks.status.${offer.status}`)}
+                                </Badge>
+                                {offer.price && <span className="text-[11px] font-bold text-primary-600">{offer.price} MRU</span>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                             <Link to={`/tasks/${offer.taskId}`}>
+                               <Button size="sm" variant="secondary" className="px-3 rounded-xl shadow-sm text-xs">{t('common.view')}</Button>
+                             </Link>
+                             {offer.status === 'PENDING' && (
+                               <Button 
+                                size="sm" 
+                                onClick={async () => {
+                                  if(!window.confirm(t('common.confirm'))) return;
+                                  try {
+                                    await tasksApi.acceptOffer(offer.taskId, offer.id);
+                                    // Refresh data
+                                    tasksApi.getMyOffers().then(r => setReceivedOffers((r.data?.content || r.data || []).map(normalizeOffer)));
+                                  } catch(e) {
+                                    alert(e.response?.data?.message || t('errors.serverError'));
+                                  }
+                                }}
+                                className="px-3 rounded-xl shadow-sm text-xs"
+                               >
+                                 {t('tasks.offers.accept')}
+                               </Button>
+                             )}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </AnimatePresence>
+                {receivedOffers.length > itemsPerPage && (
+                   <div className="flex items-center justify-center gap-2 mt-2">
+                     <button 
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => prev - 1)}
+                      className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                     >
+                       <ChevronRight size={16} className={isRtl ? '' : 'rotate-180'} />
+                     </button>
+                     <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
+                       {currentPage} / {Math.ceil(receivedOffers.length / itemsPerPage)}
+                     </span>
+                     <button 
+                      disabled={currentPage === Math.ceil(receivedOffers.length / itemsPerPage)}
+                      onClick={() => setCurrentPage(prev => prev + 1)}
+                      className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                     >
+                       <ChevronLeft size={16} className={isRtl ? '' : 'rotate-180'} />
+                     </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-6 sticky top-24 h-fit">
+            <CalendarWidget bookings={bookings} t={t} isRtl={isRtl} />
+            <QuickLinks t={t} isRtl={isRtl} />
+          </div>
         </div>
-
-        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit mb-6">
-          {['tasks', 'bookings'].map((key) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-                tab === key
-                  ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              {key === 'tasks' ? t('dashboard.myTasks') : t('dashboard.myBookings')}
-            </button>
-          ))}
-        </div>
-
-        {tab === 'tasks' && (
-          <TasksList
-            tasks={filteredTasks}
-            onEdit={openTaskEditModal}
-            onCancel={handleCancelTask}
-            onDelete={handleDeleteTask}
-            onComplete={handleCompleteTask}
-            onRate={(task) => openRatingModal({ type: 'task', id: task.id, name: task.assignedWorkerName || task.title })}
-            cancelling={cancelling}
-          />
-        )}
-
-        {tab === 'bookings' && (
-          <BookingsList
-            bookings={filteredBookings}
-            onEdit={(b) => {
-              setEditingBooking(b)
-              setEditBookingForm({
-                date: b.date ? new Date(b.date).toISOString().slice(0, 16) : '',
-                address: b.address || '',
-                locationDetails: b.locationDetails || '',
-                description: b.description || '',
-                clientPhone: b.clientPhone || user?.phone || '',
-              })
-              setEditBookingError('')
-            }}
-            onCancel={handleCancelBooking}
-            onDelete={handleDeleteBooking}
-            onRate={(b) => openRatingModal({ type: 'booking', id: b.id, name: b.workerName || t('common.worker') })}
-            onView={setViewingBooking}
-            cancelling={cancelling}
-            deletingBooking={deletingBooking}
-          />
-        )}
 
         {/* ======= PROFILE MODAL ======= */}
         <Modal open={profileOpen} onClose={() => { setProfileOpen(false); setShowPassword(false) }} title="">

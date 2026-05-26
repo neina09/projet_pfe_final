@@ -3,6 +3,7 @@ package com.backend.Projet.service;
 import com.backend.Projet.dto.LoginUserDto;
 import com.backend.Projet.dto.RegisterUserDto;
 import com.backend.Projet.dto.ResetPasswordDto;
+import com.backend.Projet.dto.UpdateProfileDto;
 import com.backend.Projet.dto.UserResponseDto;
 import com.backend.Projet.dto.VerifyUserDto;
 import com.backend.Projet.exception.BusinessException;
@@ -98,6 +99,7 @@ class AuthenticationServiceTest {
         dto.setPhone("+22222123456");
         dto.setPassword("secret123");
 
+        when(userRepository.findByUsername("youssef")).thenReturn(Optional.empty());
         when(userRepository.findByPhone("22123456")).thenReturn(Optional.empty());
         when(passwordEncoder.encode(dto.getPassword())).thenReturn("hashed-password");
         when(passwordEncoder.encode(argThat(value -> value != null && value.toString().matches("\\d{6}")))).thenReturn("hashed-verification");
@@ -121,6 +123,27 @@ class AuthenticationServiceTest {
         assertEquals("hashed-verification", savedUser.getVerificationCode());
         assertNotNull(savedUser.getVerificationCodeExpiresAt());
         verify(smsService).sendVerificationCode(eq("22123456"), anyString());
+    }
+
+    @Test
+    void signupShouldRejectDuplicateUsername() {
+        RegisterUserDto dto = new RegisterUserDto();
+        dto.setUsername("ahmed");
+        dto.setPhone("46094041");
+        dto.setPassword("secret123");
+
+        User existingUser = new User();
+        existingUser.setId(5L);
+        existingUser.setUsername("ahmed");
+        existingUser.setEnabled(true);
+
+        when(userRepository.findByUsername("ahmed")).thenReturn(Optional.of(existingUser));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> authenticationService.signup(dto));
+
+        assertEquals("Username already in use", exception.getMessage());
+        verify(userRepository, never()).findByPhone(any());
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test
@@ -208,6 +231,27 @@ class AuthenticationServiceTest {
 
         assertEquals("hashed-reset-token", user.getResetPasswordToken());
         verify(smsService).sendPasswordResetToken(eq("22123456"), argThat(token -> token != null && token.matches("\\d{8}")));
+    }
+
+    @Test
+    void updateProfileShouldRejectDuplicateUsername() {
+        User currentUser = new User();
+        currentUser.setId(7L);
+        currentUser.setUsername("current-user");
+
+        UpdateProfileDto dto = new UpdateProfileDto();
+        dto.setUsername("ahmed");
+
+        User existingUser = new User();
+        existingUser.setId(5L);
+        existingUser.setUsername("ahmed");
+
+        when(userRepository.findByUsername("ahmed")).thenReturn(Optional.of(existingUser));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> authenticationService.updateProfile(currentUser, dto));
+
+        assertEquals("Username already in use", exception.getMessage());
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test

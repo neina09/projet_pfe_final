@@ -36,7 +36,7 @@ export default function Home() {
   }, [])
 
   return (
-    <Layout>
+    <Layout className="bg-white dark:bg-gray-950">
       {/* Hero */}
       <section className="relative overflow-hidden bg-white dark:bg-gray-950 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.12),_transparent_45%),linear-gradient(135deg,#f6fff9_0%,#ffffff_45%,#eefaf3_100%)] dark:bg-none dark:bg-gradient-to-br dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary-100/40 via-transparent to-transparent dark:from-primary-900/20 pointer-events-none" />

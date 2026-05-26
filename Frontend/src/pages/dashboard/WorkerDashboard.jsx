@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { Star, CalendarCheck, Briefcase, ToggleLeft, ToggleRight, CheckCircle2, XCircle, ChevronDown, Pencil, User, Trash2, CreditCard, Receipt, Crown, Sparkles, Eye, Calendar, MapPin, Phone } from 'lucide-react'
@@ -56,11 +56,105 @@ const taskStatusVariant = {
   REJECTED: 'red'
 }
 
+import { ChevronRight, ChevronLeft, Home, Layers, Users } from 'lucide-react'
+
+function QuickLinks({ t, isRtl }) {
+  const links = [
+    { icon: Home, label: t('nav.home', {defaultValue: 'الرئيسية'}), to: '/' },
+    { icon: Layers, label: t('nav.tasks', {defaultValue: 'لوحة المهام'}), to: '/tasks' },
+    { icon: Users, label: t('nav.workers', {defaultValue: 'العمال'}), to: '/workers' },
+  ]
+
+  return (
+    <div className="card p-4 hidden lg:flex flex-col gap-3 border shadow-sm rounded-2xl bg-white dark:bg-gray-900 border-gray-100 dark:border-gray-800">
+      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 px-2">
+        {t('common.quickLinks', {defaultValue: 'روابط سريعة'})}
+      </div>
+      <div className="flex flex-col gap-1">
+        {links.map((link) => (
+          <Link
+            key={link.to}
+            to={link.to}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 dark:text-gray-400 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-900/20 dark:hover:text-primary-400 transition-all font-medium text-sm group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-500 group-hover:bg-white group-hover:text-primary-500 dark:group-hover:bg-gray-700 transition-colors shadow-sm">
+              <link.icon size={18} />
+            </div>
+            {link.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function CalendarWidget({ bookings, t, isRtl }) {
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
+  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay()
+  
+  const days = []
+  for (let i = 0; i < firstDayOfMonth; i++) days.push(null)
+  for (let i = 1; i <= daysInMonth; i++) days.push(i)
+
+  const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"]
+  const dayNames = ["ح", "ن", "ث", "ر", "خ", "ج", "س"]
+  const currentMonthName = isRtl ? monthNames[currentDate.getMonth()] : currentDate.toLocaleString('default', { month: 'long' })
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2 font-bold text-gray-800 dark:text-white">
+          <CalendarCheck size={18} />
+          {t('workerDashboard.bookings', {defaultValue: 'الحجوزات'})}
+        </div>
+        <Badge variant="green" className="text-xs bg-emerald-50 text-emerald-600 rounded-full">{bookings.length} {t('common.bookings_count', {defaultValue: 'حجوزات'})}</Badge>
+      </div>
+
+      <div className="flex items-center justify-between mb-4">
+        <span className="font-bold text-sm text-gray-800 dark:text-white">{currentMonthName} {currentDate.getFullYear()}</span>
+        <div className="flex gap-1" dir="ltr">
+           <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))} className="p-1 rounded bg-gray-50 hover:bg-gray-100 text-gray-500"><ChevronLeft size={16}/></button>
+           <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))} className="p-1 rounded bg-gray-50 hover:bg-gray-100 text-gray-500"><ChevronRight size={16}/></button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 text-center mb-2" dir="rtl">
+         {dayNames.map(d => <div key={d} className="text-xs text-gray-400 font-medium">{d}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center" dir="rtl">
+         {days.map((day, i) => {
+            if (!day) return <div key={`empty-${i}`} />
+            const isToday = new Date().getDate() === day && new Date().getMonth() === currentDate.getMonth() && new Date().getFullYear() === currentDate.getFullYear()
+            const dayBookings = bookings.filter(b => b.date && new Date(b.date).getDate() === day && new Date(b.date).getMonth() === currentDate.getMonth() && new Date(b.date).getFullYear() === currentDate.getFullYear())
+            
+            const hasPending = dayBookings.some(b => ['PENDING'].includes(b.status))
+            const hasCompleted = dayBookings.some(b => ['COMPLETED'].includes(b.status))
+            const hasActive = dayBookings.some(b => ['ACCEPTED', 'IN_PROGRESS'].includes(b.status))
+
+            return (
+               <div key={`day-${day}`} className={`h-8 w-8 mx-auto flex flex-col items-center justify-center rounded-full text-sm relative ${isToday ? 'bg-emerald-500 text-white font-bold shadow-sm' : 'text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'}`}>
+                  {day}
+                  <div className="absolute -bottom-1 flex items-center justify-center gap-[2px] w-full">
+                     {hasPending && !isToday && <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-sm" />}
+                     {hasActive && !isToday && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm" />}
+                     {hasCompleted && !isToday && <div className="w-1.5 h-1.5 rounded-full bg-teal-500 shadow-sm" />}
+                     {dayBookings.length > 0 && !(hasPending || hasActive || hasCompleted) && !isToday && <div className="w-1.5 h-1.5 rounded-full bg-gray-400 shadow-sm" />}
+                  </div>
+               </div>
+            )
+         })}
+      </div>
+    </div>
+  )
+}
+
 export default function WorkerDashboard() {
   const { t, i18n } = useTranslation()
   const isRtl = i18n.language?.startsWith('ar')
   const { user, refreshProfile } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const [tab, setTab] = useState(location.state?.tab || 'offers')
   const [offerFilter, setOfferFilter] = useState('ALL')
   const [bookingFilter, setBookingFilter] = useState('ALL')
@@ -96,6 +190,9 @@ export default function WorkerDashboard() {
   const [subscriptionSubmitting, setSubscriptionSubmitting] = useState(false)
   const [subscriptionError, setSubscriptionError] = useState('')
   const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false)
+  const [viewingOffer, setViewingOffer] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 8
 
   useEffect(() => {
     setImgError(false)
@@ -673,27 +770,9 @@ export default function WorkerDashboard() {
   }
 
   const stats = [
-    { 
-      icon: Star, 
-      label: t('workerDashboard.stats.rating'), 
-      value: workerProfile?.rating?.toFixed(1) ?? workerProfile?.averageRating?.toFixed(1) ?? '—', 
-      bgColor: '#FAEEDA', 
-      iconColor: '#BA7517' 
-    },
-    { 
-      icon: CalendarCheck, 
-      label: t('workerDashboard.stats.jobs'), 
-      value: bookings.filter(b => b.status === 'COMPLETED').length, 
-      bgColor: '#E1F5EE', 
-      iconColor: '#0F6E56' 
-    },
-    { 
-      icon: Briefcase, 
-      label: t('workerDashboard.stats.pending'), 
-      value: bookings.filter(b => b.status === 'PENDING').length, 
-      bgColor: '#FAECE7', 
-      iconColor: '#993C1D' 
-    },
+    { icon: Star, label: t('dashboard.stats.rating', { defaultValue: 'التقييم' }), value: workerProfile?.rating?.toFixed(1) ?? workerProfile?.averageRating?.toFixed(1) ?? '—', iconBg: 'bg-[#FFF9DB] dark:bg-amber-900/40', textColor: 'text-[#FAB005]' },
+    { icon: CalendarCheck, label: t('workerDashboard.stats.jobs', { defaultValue: 'مهام منجزة' }), value: bookings.filter(b => b.status === 'COMPLETED').length, iconBg: 'bg-[#EBFBEE] dark:bg-emerald-900/40', textColor: 'text-[#40C057]' },
+    { icon: Briefcase, label: t('workerDashboard.stats.pending', { defaultValue: 'قيد الانتظار' }), value: bookings.filter(b => b.status === 'PENDING').length, iconBg: 'bg-[#ECF2FF] dark:bg-blue-900/40', textColor: 'text-[#4C6EF5]' },
   ]
 
   const sortedOffers = sortOffersByStatus(offers).filter(o => !hiddenOfferIds.includes(String(o.id)))
@@ -760,201 +839,36 @@ export default function WorkerDashboard() {
             </Link>
           </div>
         </motion.div>
-        {workerProfile?.subscriptionRequired === false && !subscription?.active && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8 p-4 rounded-2xl bg-white dark:bg-gray-800 border border-amber-100 dark:border-amber-900/30 shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4"
-            dir={isRtl ? 'rtl' : 'ltr'}
-          >
-            {/* Soft decorative glow */}
-            <div className={`absolute ${isRtl ? 'right-0' : 'left-0'} top-0 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none`} />
-
-            <div className={`flex items-center gap-4 relative z-10 flex-col md:flex-row ${isRtl ? 'text-right' : 'text-left'}`}>
-              <div className="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/20 flex items-center justify-center text-amber-500 shrink-0">
-                <Crown size={22} />
-              </div>
-              <div>
-                <h3 className={`text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5 ${isRtl ? 'justify-end' : 'justify-start'}`}>
-                  {t('workerDashboard.subscription.bannerTitle', { defaultValue: 'ترقية الحساب للعضوية الذهبية المميزة 👑' })}
-                </h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xl leading-relaxed">
-                  {t('workerDashboard.subscription.bannerDesc', {
-                    defaultValue: 'حسابك نشط ومستمر بالكامل مجاناً! هل تود مضاعفة أرباحك وتصدر نتائج البحث؟ اضغط هنا للتفعيل والتفاصيل.'
-                  })}
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setTab('subscription')
-                setTimeout(() => {
-                  document.getElementById('dashboard-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }, 100)
-              }}
-              className="relative z-10 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-semibold text-xs shadow-sm hover:shadow transition-colors duration-200 shrink-0 whitespace-nowrap"
-            >
-              {t('workerDashboard.subscription.bannerButton', { defaultValue: 'التفاصيل والتفعيل 💎' })}
-            </button>
-          </motion.div>
-        )}
-
-        <div className="grid grid-cols-3 gap-[10px] mb-6 w-full">
-          {stats.map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08 }}
-              className="flex items-center gap-3 shrink-0 shadow-sm hover:shadow-md transition-shadow duration-300"
-              style={{
-                background: 'var(--color-background-secondary)',
-                borderRadius: '8px',
-                padding: '12px 16px'
-              }}
-            >
-              <div 
-                className="shrink-0 flex items-center justify-center"
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '8px',
-                  backgroundColor: s.bgColor
-                }}
-              >
-                <s.icon size={20} style={{ color: s.iconColor }} />
-              </div>
-              <div className="flex flex-col items-start gap-0.5 min-w-0">
-                <div 
-                  className="font-medium leading-none"
-                  style={{ fontSize: '20px', fontWeight: '500', color: 'var(--foreground)' }}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6 items-start">
+          {/* Main Content */}
+          <div className="flex flex-col gap-6 w-full min-w-0">
+            {/* Stats Row */}
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              {stats.map((s, i) => (
+                <motion.div
+                  key={s.label}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  className="bg-white dark:bg-gray-900 rounded-[24px] border border-gray-100 dark:border-gray-800 p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all flex-1 min-w-[200px] group"
                 >
-                  {s.value}
-                </div>
-                <div 
-                  className="leading-tight truncate text-start"
-                  style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}
-                >
-                  {s.label}
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {workerProfile?.subscriptionRequired === true && (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 grid gap-4 lg:grid-cols-[1.2fr,0.8fr]"
-          >
-            <div className="card p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <CreditCard size={18} className="text-primary-500" />
-                    <h2 className="text-base font-bold text-gray-900 dark:text-white">
-                      {t('workerDashboard.subscription.title', { defaultValue: 'اشتراك المنصة' })}
-                    </h2>
+                  <div className={`w-14 h-14 rounded-2xl ${s.iconBg} ${s.textColor} flex items-center justify-center transition-transform group-hover:scale-110 shrink-0`}>
+                    <s.icon size={28} strokeWidth={2.5} />
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {t('workerDashboard.subscription.subtitle', { defaultValue: 'فعّل اشتراكك لمدة 6 أشهر ليظهر ملفك المهني داخل المنصة.' })}
-                  </p>
-                </div>
-                <Badge variant={subscriptionBadgeVariant}>
-                  {subscriptionStatusLabel}
-                </Badge>
-              </div>
-
-              <div className="grid gap-2.5 sm:grid-cols-3 mb-4">
-                <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3">
-                  <div className="text-[10px] text-gray-500 mb-0.5">{t('workerDashboard.subscription.amount', { defaultValue: 'قيمة الاشتراك' })}</div>
-                  <div className="text-base font-bold text-gray-900 dark:text-white">{subscription?.amount ?? 200} MRU</div>
-                </div>
-                <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3">
-                  <div className="text-[10px] text-gray-500 mb-0.5">{t('workerDashboard.subscription.recipient', { defaultValue: 'اسم المستفيد' })}</div>
-                  <div className="text-xs font-semibold text-gray-900 dark:text-white">{subscription?.recipientName || 'neina med vall'}</div>
-                </div>
-                <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3">
-                  <div className="text-[10px] text-gray-500 mb-0.5">{t('workerDashboard.subscription.account', { defaultValue: 'رقم الحساب' })}</div>
-                  <div className="text-base font-bold tracking-wide text-gray-900 dark:text-white">{subscription?.accountNumber || '48995086'}</div>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubscriptionReceiptSubmit} className="space-y-4">
-                <Input
-                  label={t('workerDashboard.subscription.reference', { defaultValue: 'رقم العملية أو المرجع' })}
-                  value={paymentReference}
-                  onChange={(e) => setPaymentReference(e.target.value)}
-                  placeholder={t('workerDashboard.subscription.referencePlaceholder', { defaultValue: 'أدخل رقم العملية بعد التحويل' })}
-                  required
-                />
-                <label className="block rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 p-4 hover:border-primary-400 transition-colors cursor-pointer">
-                  <div className="flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">
-                    <Receipt size={16} />
-                    {t('workerDashboard.subscription.receipt', { defaultValue: 'وصل الدفع' })}
+                  <div className={isRtl ? 'text-right' : 'text-left'}>
+                    <div className="text-2xl font-black text-gray-900 dark:text-white leading-none mb-1">
+                      {s.value}
+                    </div>
+                    <div className="text-xs font-bold text-gray-400 whitespace-nowrap">
+                      {s.label}
+                    </div>
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                    {t('workerDashboard.subscription.receiptHint', { defaultValue: 'ارفع صورة أو PDF لوصل التحويل، وسيتم التحقق من بياناته عبر OCR أو مراجعته من الإدارة قبل تفعيل الاشتراك.' })}
-                  </p>
-                  <div className="rounded-xl bg-gray-50 dark:bg-gray-900/60 px-3 py-2 text-sm text-gray-600 dark:text-gray-300">
-                    {receiptFile?.name || subscription?.receiptUrl || t('workerDashboard.subscription.receiptSelect', { defaultValue: 'اختر ملف الوصل' })}
-                  </div>
-                  <input
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf"
-                    className="hidden"
-                    onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-                  />
-                </label>
-
-                {subscription?.endsAt && (
-                  <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
-                    {subscription?.active
-                      ? t('workerDashboard.subscription.endsAt', {
-                        date: new Date(subscription.endsAt).toLocaleDateString(),
-                        defaultValue: `الاشتراك نشط حتى ${new Date(subscription.endsAt).toLocaleDateString()}`,
-                      })
-                      : t('workerDashboard.subscription.lastEndsAt', {
-                        date: new Date(subscription.endsAt).toLocaleDateString(),
-                        defaultValue: `آخر تاريخ انتهاء كان ${new Date(subscription.endsAt).toLocaleDateString()}`,
-                      })}
-                  </div>
-                )}
-
-
-
-                {subscriptionError && (
-                  <div className="rounded-2xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600 dark:text-red-300">
-                    {subscriptionError}
-                  </div>
-                )}
-
-                <Button type="submit" loading={subscriptionSubmitting} className="w-full sm:w-auto">
-                  {t('workerDashboard.subscription.submit', { defaultValue: 'رفع الوصل وإرسال التحقق' })}
-                </Button>
-              </form>
+                </motion.div>
+              ))}
             </div>
 
-            <div className="card p-4 flex flex-col items-center justify-center text-center">
-              <img
-                src={subscription?.qrImageUrl || '/payment-qr.svg'}
-                alt="Payment QR"
-                className="w-40 h-40 object-contain rounded-2xl border border-emerald-100 bg-white p-2.5 shadow-sm"
-              />
-              <p className="mt-3 text-xs font-semibold text-gray-900 dark:text-white">
-                {t('workerDashboard.subscription.qrTitle', { defaultValue: 'الدفع عبر QR أو رقم الحساب' })}
-              </p>
-              <p className="mt-1.5 text-[11px] leading-5 text-gray-500 dark:text-gray-400">
-                {t('workerDashboard.subscription.qrHint', { defaultValue: 'يمكنك الدفع عبر QR أو عبر رقم الحساب، ثم أدخل رقم العملية وارفع الوصل لتفعيل ظهورك في المنصة.' })}
-              </p>
-            </div>
-          </motion.div>
-        )}
-
-        <div id="dashboard-tabs" className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit mb-6 flex-wrap">
-          {['offers', 'bookings', 'myTasks', 'myBookings', 'reviews', ...(workerProfile?.subscriptionRequired === false ? ['subscription'] : [])].map((tabKey) => (
+            <div id="dashboard-tabs" className="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit flex-wrap">
+          {['offers', 'bookings', 'myBookings', 'reviews', ...(workerProfile?.subscriptionRequired === false ? ['subscription'] : [])].map((tabKey) => (
             <button
               key={tabKey}
               onClick={() => setTab(tabKey)}
@@ -964,12 +878,10 @@ export default function WorkerDashboard() {
                 }`}
             >
               {tabKey === 'offers'
-                ? t('workerDashboard.myOffers')
+                ? t('workerDashboard.myOffers', {defaultValue: 'عروضي'})
                 : tabKey === 'bookings'
                   ? t('workerDashboard.myRequests')
-                  : tabKey === 'myTasks'
-                    ? t('dashboard.myTasks')
-                    : tabKey === 'myBookings'
+                  : tabKey === 'myBookings'
                       ? t('dashboard.myBookings')
                       : tabKey === 'reviews'
                         ? t('workers.profile.reviews')
@@ -1025,129 +937,69 @@ export default function WorkerDashboard() {
                   </p>
                 </motion.div>
               ) : (
-                <motion.div layout className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 items-start">
-                  {filteredOffers.map((offer, i) => {
-                    const statusAccent = {
-                      PENDING: 'border-s-amber-500 dark:border-s-amber-600',
-                      SELECTED: 'border-s-blue-500 dark:border-s-blue-600',
-                      IN_PROGRESS: 'border-s-primary-500 dark:border-s-primary-600',
-                      COMPLETED: 'border-s-emerald-500 dark:border-s-emerald-600',
-                      WORKER_REFUSED: 'border-s-red-500 dark:border-s-red-600',
-                      CLOSED: 'border-s-gray-400 dark:border-s-gray-600',
-                    }[offer.status] || 'border-s-gray-200'
+                <div className="flex flex-col gap-4">
+                  <motion.div layout className="flex flex-col relative z-10 w-full overflow-hidden bg-white dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                    {filteredOffers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((offer, i) => {
+                      const statusConfig = {
+                        PENDING: { label: t('tasks.status.PENDING', {defaultValue: 'انتظار'}), color: 'text-orange-500 bg-orange-50 dark:bg-orange-500/10', dot: 'bg-orange-500' },
+                        SELECTED: { label: t('tasks.status.SELECTED', {defaultValue: 'تم اختيارك'}), color: 'text-blue-500 bg-blue-50 dark:bg-blue-500/10', dot: 'bg-blue-500' },
+                        IN_PROGRESS: { label: t('tasks.status.IN_PROGRESS', {defaultValue: 'قيد التنفيذ'}), color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10', dot: 'bg-emerald-500' },
+                        COMPLETED: { label: t('tasks.status.COMPLETED', {defaultValue: 'مكتمل'}), color: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-600/20', dot: 'bg-emerald-600' },
+                        WORKER_REFUSED: { label: t('tasks.status.WORKER_REFUSED', {defaultValue: 'رفضت التنفيذ'}), color: 'text-red-500 bg-red-50 dark:bg-red-500/10', dot: 'bg-red-500' },
+                        CLOSED: { label: t('tasks.status.CLOSED', {defaultValue: 'مغلق'}), color: 'text-gray-500 bg-gray-50 dark:bg-gray-500/10', dot: 'bg-gray-500' },
+                      }[offer.status] || { label: t(`tasks.status.${offer.status}`), color: 'text-gray-500 bg-gray-50 dark:bg-gray-500/10', dot: 'bg-gray-500' }
 
-                    const textAccent = {
-                      PENDING: 'text-amber-600 dark:text-amber-400',
-                      SELECTED: 'text-blue-600 dark:text-blue-400',
-                      IN_PROGRESS: 'text-primary-600 dark:text-primary-400',
-                      COMPLETED: 'text-emerald-600 dark:text-emerald-400',
-                      WORKER_REFUSED: 'text-red-600 dark:text-red-400',
-                      CLOSED: 'text-gray-500 dark:text-gray-400',
-                    }[offer.status] || 'text-gray-500'
-
-                    const borderAccent = {
-                      PENDING: 'border-s-amber-400 dark:border-s-amber-500',
-                      SELECTED: 'border-s-blue-400 dark:border-s-blue-500',
-                      IN_PROGRESS: 'border-s-primary-400 dark:border-s-primary-500',
-                      COMPLETED: 'border-s-emerald-400 dark:border-s-emerald-500',
-                      WORKER_REFUSED: 'border-s-red-400 dark:border-s-red-500',
-                      CLOSED: 'border-s-gray-400 dark:border-s-gray-500',
-                    }[offer.status] || 'border-s-gray-200'
-
-                    return (
-                      <Link to={`/tasks/${offer.taskId}`} key={offer.id} className="block group">
-                        <motion.div
-                          layout
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
+                      return (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.2, delay: Math.min(i * 0.05, 0.2) }}
-                          className={`card relative overflow-hidden flex flex-col justify-between border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-sm transition-all duration-200 bg-white dark:bg-gray-900 rounded-2xl border-s-4 ${borderAccent}`}
+                          key={offer.id} 
+                          className="block group cursor-pointer border-b last:border-0 border-gray-50 dark:border-gray-800 py-3.5 px-5 hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-colors" 
+                          onClick={() => navigate(`/tasks/${offer.taskId}`)}
                         >
-                          <div className="p-3 flex-1 flex flex-col gap-1.5">
-                            {/* Header */}
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1 min-w-0">
-                                <span className="text-[11px] font-semibold text-primary-600 dark:text-primary-400 mb-0.5 block">
-                                  {isRtl ? 'عرض مقدم على مهمة' : 'Offer on Task'}
-                                </span>
-                                <h3 className="font-bold text-gray-900 dark:text-white text-sm leading-snug line-clamp-1 mt-0.5">
-                                  {offer.taskTitle}
-                                </h3>
-                              </div>
-                              <Badge variant={{ PENDING: 'yellow', SELECTED: 'blue', IN_PROGRESS: 'primary', COMPLETED: 'green', WORKER_REFUSED: 'red', CLOSED: 'gray' }[offer.status] || 'gray'} className="shrink-0 font-medium px-2 py-0.5 text-[10px]">
-                                {offer.status === 'PENDING_REVIEW' ? t('tasks.status.PENDING') : t(`tasks.status.${offer.status}`)}
-                              </Badge>
-                            </div>
-
-                            {/* Client name */}
-                            <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-gray-50 dark:border-gray-800/60">
-                              <div className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center shrink-0 border border-gray-200 dark:border-gray-700">
-                                <User size={10} className="text-gray-500 dark:text-gray-400" />
-                              </div>
-                              <span className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
-                                {offer.taskUserName || t('common.client')}
-                              </span>
-                            </div>
-
-                            {/* Bidding Proposal message */}
-                            {offer.message && (
-                              <div className="relative p-2.5 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-400 mt-1.5 italic">
-                                <p className="line-clamp-2">{offer.message}</p>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Actions Bar */}
-                          <div className="p-2 bg-gray-50 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-1.5 flex-wrap">
-                            <span className="text-[11px] font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center gap-1">
-                              <Eye size={12} />
-                              {t('common.view')}
-                            </span>
-
-                            <div className="flex items-center gap-1.5 flex-shrink-0" onClick={e => e.preventDefault()}>
-                              {offer.status === 'SELECTED' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    className="h-7 text-[11px] font-medium px-2 py-0 flex items-center"
-                                    loading={responding === `offer-${offer.id}-accept`}
-                                    onClick={(e) => { e.stopPropagation(); handleOfferDecision(offer.id, 'accept') }}
-                                  >
-                                    <CheckCircle2 size={12} className="me-1" />
-                                    {t('workerDashboard.accept')}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="danger"
-                                    className="h-7 text-[11px] font-medium px-2 py-0 flex items-center"
-                                    loading={responding === `offer-${offer.id}-refuse`}
-                                    onClick={(e) => { e.stopPropagation(); handleOfferDecision(offer.id, 'refuse') }}
-                                  >
-                                    <XCircle size={12} className="me-1" />
-                                    {t('workerDashboard.reject')}
-                                  </Button>
-                                </>
-                              )}
-                              {['COMPLETED', 'WORKER_REFUSED', 'CLOSED', 'REFUSED'].includes(offer.status) && (
-                                <Button
-                                  size="sm"
-                                  variant="danger"
-                                  className="h-7 text-[11px] font-medium px-2 py-0 flex items-center"
-                                  loading={deletingOffer === offer.id}
-                                  onClick={(e) => { e.stopPropagation(); handleDeleteOffer(offer.id) }}
-                                >
-                                  <Trash2 size={12} className="me-1" />
-                                  {t('common.delete')}
-                                </Button>
-                              )}
-                            </div>
+                          <div className="flex items-center justify-between gap-4">
+                             <div className="min-w-0 text-start">
+                                <h3 className="font-bold text-gray-800 dark:text-gray-200 text-[13px] truncate">{offer.taskTitle}</h3>
+                                <p className="text-gray-400 dark:text-gray-500 text-[11px] mt-0.5 truncate">{offer.taskUserName || t('common.client')}</p>
+                             </div>
+                             <div className="flex items-center gap-2 shrink-0">
+                                {offer.status === 'SELECTED' && (
+                                  <div className="flex gap-1.5 ms-2" onClick={e => e.stopPropagation()}>
+                                     <button className="px-3 py-1.5 bg-emerald-500 text-white text-[11px] font-bold rounded-lg hover:bg-emerald-600 transition-colors" onClick={() => handleOfferDecision(offer.id, 'accept')}>{t('workerDashboard.accept')}</button>
+                                     <button className="px-3 py-1.5 bg-red-500 text-white text-[11px] font-bold rounded-lg hover:bg-red-600 transition-colors" onClick={() => handleOfferDecision(offer.id, 'refuse')}>{t('workerDashboard.reject')}</button>
+                                  </div>
+                                )}
+                                <span className={`px-4 py-1.5 text-[11px] font-bold rounded-full ${statusConfig.color}`}>{statusConfig.label}</span>
+                             </div>
                           </div>
                         </motion.div>
-                      </Link>
-                    )
-                  })}
-                </motion.div>
+                      )
+                    })}
+                  </motion.div>
+                  
+                  {filteredOffers.length > itemsPerPage && (
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                       <button 
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(prev => prev - 1)}
+                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                       >
+                         <ChevronRight size={16} className={isRtl ? '' : 'rotate-180'} />
+                       </button>
+                       <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
+                         {currentPage} / {Math.ceil(filteredOffers.length / itemsPerPage)}
+                       </span>
+                       <button 
+                        disabled={currentPage === Math.ceil(filteredOffers.length / itemsPerPage)}
+                        onClick={() => setCurrentPage(prev => prev + 1)}
+                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                       >
+                         <ChevronLeft size={16} className={isRtl ? '' : 'rotate-180'} />
+                       </button>
+                    </div>
+                  )}
+                </div>
               )}
             </AnimatePresence>
           </div>
@@ -1380,12 +1232,7 @@ export default function WorkerDashboard() {
           </div>
         )}
 
-        {tab === 'myTasks' && (
-          <TasksList
-            tasks={filteredMyTasks}
-            cancelling={null}
-          />
-        )}
+
 
         {tab === 'myBookings' && (
           <BookingsList
@@ -1447,47 +1294,43 @@ export default function WorkerDashboard() {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.05 }}
-                    className="card p-3 flex flex-col gap-1.5 hover:shadow-md hover:border-primary-100 dark:hover:border-primary-900 transition-all duration-300 relative group h-fit items-stretch justify-start self-start"
+                    className="card p-5 flex flex-col gap-4 hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-900 rounded-3xl border border-gray-100 dark:border-gray-800"
+                    dir="rtl"
                   >
-                    <div className="flex items-center justify-between gap-3 relative z-10">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="relative w-8 h-8 rounded-lg overflow-hidden ring-2 ring-gray-50 dark:ring-gray-800 bg-gray-100 dark:bg-gray-800">
-                          {reviewerImage && (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-12 h-12 rounded-2xl overflow-hidden ring-4 ring-gray-50 dark:ring-gray-800 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                          {reviewerImage ? (
                             <img
                               src={reviewerImage}
                               alt={reviewerName}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
-                              }}
+                              onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }}
                             />
-                          )}
-                          <div className={`${reviewerImage ? 'hidden' : 'flex'} absolute inset-0 w-full h-full items-center justify-center text-gray-400`}>
-                            <User size={14} />
+                          ) : null}
+                          <div className={`${reviewerImage ? 'hidden' : 'flex'} absolute inset-0 w-full h-full items-center justify-center text-gray-400 bg-gray-50 dark:bg-gray-800`}>
+                            <User size={20} />
                           </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-baseline gap-x-3 min-w-0">
-                          <h3 className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                        <div className="flex flex-col text-right">
+                          <h3 className="font-bold text-sm text-gray-900 dark:text-white">
                             {reviewerName}
                           </h3>
-                          <span className="text-[10px] text-gray-400 font-normal whitespace-nowrap">
-                            {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ''}
+                          <span className="text-[11px] text-gray-400 font-medium">
+                            {review.createdAt ? new Date(review.createdAt).toLocaleDateString('ar-EG', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <StarRating value={review.stars || review.rating || 0} readOnly size={12} />
+                      <div className="flex shrink-0">
+                        <StarRating value={review.stars || review.rating || 0} readOnly size={14} />
                       </div>
                     </div>
 
-                    {(review.comment || review.message || review.review) && (
-                      <div className="bg-gray-50/50 dark:bg-gray-800/40 p-2.5 rounded-xl border border-gray-100/50 dark:border-gray-700/50">
-                        <p className="text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-                          {review.comment || review.message || review.review}
-                        </p>
-                      </div>
-                    )}
+                    <div className="bg-gray-50/50 dark:bg-gray-800/40 p-4 rounded-2xl border border-gray-100/50 dark:border-gray-700/50 min-h-[60px] flex items-center">
+                      <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300 italic">
+                        {review.comment || review.message || review.review || (isRtl ? "تم التقييم بدون تعليق" : "Rated without comment")}
+                      </p>
+                    </div>
                   </motion.div>
                 )
               })
@@ -1605,6 +1448,55 @@ export default function WorkerDashboard() {
             </div>
           </motion.div>
         )}
+
+          </div> {/* End Main Content */}
+
+          {/* Sidebar Area */}
+          <div className="flex flex-col gap-6 w-full min-w-0 sticky top-24 h-fit">
+            <CalendarWidget bookings={bookings} t={t} isRtl={isRtl} />
+            <QuickLinks t={t} isRtl={isRtl} />
+            
+            {/* Sidebar Subscription Widget */}
+            {workerProfile?.subscriptionRequired === false && !subscription?.active ? (
+              <div className="card p-0 overflow-hidden border border-emerald-500 bg-white dark:bg-gray-900 shadow-sm relative">
+                <div className="bg-emerald-50 dark:bg-emerald-900/30 px-4 py-3 border-b border-emerald-100 dark:border-emerald-800 flex items-center justify-between">
+                  <span className="font-bold text-emerald-800 dark:text-emerald-300">{t('workerDashboard.subscription.title', { defaultValue: 'الاشتراك المميز' })}</span>
+                  <Badge variant="green" className="bg-emerald-100 text-emerald-700">{t('workerDashboard.upgrade', { defaultValue: 'مميز' })}</Badge>
+                </div>
+                <div className="p-4 space-y-4 text-center">
+                   <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none" />
+                   <div className="relative z-10">
+                     <span className="text-3xl font-extrabold text-gray-900 dark:text-white">{subscription?.amount ?? 29}</span>
+                     <span className="text-sm text-gray-500 dark:text-gray-400"> {t('common.currency', {defaultValue: 'ريال'})} / {t('common.month', {defaultValue: 'شهر'})}</span>
+                   </div>
+                   <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2 mb-4 text-start relative z-10">
+                      <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500 shrink-0"/> {t('workerDashboard.features.premium1', {defaultValue: 'ظهور أولي في نتائج البحث'})}</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500 shrink-0"/> {t('workerDashboard.features.premium2', {defaultValue: 'طلبات غير محدودة'})}</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500 shrink-0"/> {t('workerDashboard.features.premium3', {defaultValue: 'شارة موثوق'})}</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 size={16} className="text-emerald-500 shrink-0"/> {t('workerDashboard.features.premium4', {defaultValue: 'دعم أولوية 24/7'})}</li>
+                   </ul>
+                   <Button 
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl relative z-10"
+                      onClick={() => {
+                        setTab('subscription')
+                        setTimeout(() => document.getElementById('dashboard-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
+                      }}
+                   >
+                     {t('workerDashboard.upgradeSub', { defaultValue: 'ترقية الاشتراك' })}
+                   </Button>
+                </div>
+                
+                <div className="bg-gray-50 dark:bg-gray-800 p-4 border-t border-gray-100 dark:border-gray-800">
+                    <h4 className="font-medium text-center text-gray-600 mb-1 text-sm">{t('workerDashboard.features.free', {defaultValue: 'الاشتراك المجاني'})}</h4>
+                    <div className="text-center mb-3 text-sm text-gray-500">
+                        <span className="font-bold">0</span> {t('common.currency', {defaultValue: 'ريال'})} / {t('common.month', {defaultValue: 'شهر'})}
+                    </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
 
         <Modal open={!!viewingBooking} onClose={() => setViewingBooking(null)} title={t('bookings.details')}>
           {viewingBooking && (

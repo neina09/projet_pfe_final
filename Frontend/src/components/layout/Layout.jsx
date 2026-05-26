@@ -8,7 +8,7 @@ const pageVariants = {
   exit:    { opacity: 0, y: -12, transition: { duration: 0.2 } },
 }
 
-export default function Layout({ children, noFooter = false }) {
+export default function Layout({ children, noFooter = false, className = "bg-gray-50/50 dark:bg-gray-950/50" }) {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -17,7 +17,7 @@ export default function Layout({ children, noFooter = false }) {
         initial="initial"
         animate="animate"
         exit="exit"
-        className="flex-1"
+        className={`flex-1 ${className}`}
       >
         {children}
       </motion.main>

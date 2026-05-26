@@ -15,6 +15,8 @@ import { Textarea } from '../../components/ui/Input'
 import { PageLoader } from '../../components/ui/Spinner'
 import StarRating from '../../components/ui/StarRating'
 import { normalizeTask, normalizeOffer } from '../../lib/normalizers'
+import { MapContainer, TileLayer, Marker } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
 
 const statusVariant = { PENDING: 'yellow', OPEN: 'blue', IN_PROGRESS: 'primary', COMPLETED: 'green', CANCELLED: 'red', PENDING_REVIEW: 'yellow' }
 
@@ -674,6 +676,21 @@ export default function TaskDetail() {
             </div>
           </form>
         </Modal>
+
+        {task.latitude && task.longitude && (
+          <div id="task-map" className="mt-8">
+             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+               <MapPin className="text-primary-500" />
+               {t('becomeWorker.form.location')}
+             </h2>
+             <div className="card overflow-hidden h-[400px]">
+                <MapContainer center={[task.latitude, task.longitude]} zoom={15} style={{ height: '100%', width: '100%' }}>
+                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                   <Marker position={[task.latitude, task.longitude]} />
+                </MapContainer>
+             </div>
+          </div>
+        )}
       </div>
     </Layout>
   )

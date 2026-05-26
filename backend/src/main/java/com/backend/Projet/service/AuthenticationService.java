@@ -87,8 +87,14 @@ public class AuthenticationService {
     @Transactional
     public UserResponseDto signup(RegisterUserDto input) {
         String normalizedPhone = MauritaniaPhoneUtils.normalize(input.getPhone());
+        String normalizedUsername = input.getUsername() == null ? null : input.getUsername().trim();
         PasswordPolicy.validateOrThrow(input.getPassword());
+        Optional<User> existingUsername = userRepository.findByUsername(normalizedUsername);
         Optional<User> existingUser = userRepository.findByPhone(normalizedPhone);
+        if (existingUsername.isPresent()
+                && (existingUser.isEmpty() || !existingUsername.get().getId().equals(existingUser.get().getId()))) {
+            throw new BusinessException("Username already in use");
+        }
         if (existingUser.isPresent()) {
             if (existingUser.get().isEnabled()) {
                 log.warn("Phone already in use for {}", maskPhone(normalizedPhone));
@@ -96,7 +102,7 @@ public class AuthenticationService {
             }
             // User exists but is not enabled, update them and send a new code
             User user = existingUser.get();
-            user.setUsername(input.getUsername());
+            user.setUsername(normalizedUsername);
             user.setPassword(passwordEncoder.encode(input.getPassword()));
             String verificationCode = generateVerificationCode();
             user.setVerificationCode(passwordEncoder.encode(verificationCode));
@@ -105,7 +111,7 @@ public class AuthenticationService {
             User saved = userRepository.save(user);
             return userMapper.toDto(saved);
         }
-        User user = new User(input.getUsername(), normalizedPhone, passwordEncoder.encode(input.getPassword()));
+        User user = new User(normalizedUsername, normalizedPhone, passwordEncoder.encode(input.getPassword()));
         user.setRole(Role.USER);
         String verificationCode = generateVerificationCode();
         user.setVerificationCode(passwordEncoder.encode(verificationCode));
@@ -222,7 +228,12 @@ public class AuthenticationService {
     @Transactional
     public UserResponseDto updateProfile(User currentUser, UpdateProfileDto input) {
         if (input.getUsername() != null && !input.getUsername().isBlank()) {
-            currentUser.setUsername(input.getUsername());
+            String normalizedUsername = input.getUsername().trim();
+            Optional<User> existingUserByUsername = userRepository.findByUsername(normalizedUsername);
+            if (existingUserByUsername.isPresent() && !existingUserByUsername.get().getId().equals(currentUser.getId())) {
+                throw new BusinessException("Username already in use");
+            }
+            currentUser.setUsername(normalizedUsername);
         }
         if (input.getPhone() != null && !input.getPhone().isBlank()) {
             String normalizedPhone = MauritaniaPhoneUtils.normalize(input.getPhone());

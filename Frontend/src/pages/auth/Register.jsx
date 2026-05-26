@@ -103,6 +103,10 @@ export default function Register() {
       
       if (err.response?.status === 409 || msg.toLowerCase().includes('conflict')) {
         setErrors(prev => ({ ...prev, general: 'errors.conflict' }))
+      } else if (msg.toLowerCase().includes('already') && msg.toLowerCase().includes('phone')) {
+        setErrors(prev => ({ ...prev, phone: 'errors.phoneAlreadyInUse' }))
+      } else if (msg.toLowerCase().includes('already') && (msg.toLowerCase().includes('username') || msg.toLowerCase().includes('name'))) {
+        setErrors(prev => ({ ...prev, fullName: 'errors.usernameAlreadyInUse' }))
       } else if (msg.toLowerCase().includes('password')) {
         setErrors(prev => ({ ...prev, password: 'errors.passwordComplexity' }))
       } else if (msg.toLowerCase().includes('mauritanian')) {

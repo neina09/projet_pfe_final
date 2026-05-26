@@ -571,6 +571,7 @@
     "accountNotVerified": "Compte non vérifié. Veuillez d'abord vérifier votre compte.",
     "invalidMauritanianPhone": "Le numéro de téléphone mauritanien doit comporter 8 chiffres",
     "phoneAlreadyInUse": "Ce numéro de téléphone est déjà utilisé par un autre compte",
+    "usernameAlreadyInUse": "Ce nom est déjà utilisé par un autre compte",
     "dateInPast": "Vous ne pouvez pas choisir une date passée"
   }
 }
